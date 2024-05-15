@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+project_name: no_trainer
+dist: build
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    - go mod download
+    - pnpm install
+    - pnpm prod
+builds:
+  - id: linux-builds
+    binary: no_trainer
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: ["amd64"]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w
+    no_unique_dist_dir: true
+upx:
+  - enabled: true
+    ids: [linux-builds]
+    compress: best
+    lzma: true
+archives:
+  - format: binary
+dockers:
+  - ids: [linux-builds]
+    goos: linux
+    goarch: amd64
+    image_templates: ["registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}-amd64"]
+    dockerfile: Containerfile
+    use: buildx
+    build_flag_templates:
+    - "--pull"
+    - "--label=org.opencontainers.image.created={{.Date}}"
+    - "--label=org.opencontainers.image.name={{.ProjectName}}"
+    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+    - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source={{.GitURL}}"
+    - "--platform=linux/amd64"
+docker_manifests:
+  - name_template: "registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}"
+    image_templates:
+    - "registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}-amd64"
+  - name_template: "registry.gitlab.com/pidrakin/no_trainer:latest"
+    image_templates:
+    - "registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}-amd64"
+snapshot:
+  name_template: "{{ .Tag }}-SNAPSHOT"
+changelog:
+  disable: true
+release:
+  disable: true
