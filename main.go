@@ -35,6 +35,7 @@ func GetTemplateFiles(patterns ...string) ([]string, error) {
 func loadTemplates(r *gin.Engine) {
 	templateFiles := []string{
 		"templates/*.html",
+		"templates/partials/*.html",
 	}
 
 	if gin.Mode() == gin.ReleaseMode {
