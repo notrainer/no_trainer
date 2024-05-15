@@ -1,0 +1,19 @@
+services:
+  server:
+    image: lscr.io/linuxserver/webtop:amd64-ubuntu-kde
+    container_name: server
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - SUBFOLDER=/ #optional
+      - TITLE=NoVNC-Server #optional
+    ports:
+      - 3000:3000
+      - 3001:3001
+    devices:
+      - /dev/dri:/dev/dri #optional
+    shm_size: "1gb" #optional
+    restart: unless-stopped

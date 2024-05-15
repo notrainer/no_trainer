@@ -82,8 +82,6 @@ type Login struct {
 
 func startServer(config config) {
 
-	templateContext := gin.H{}
-
 	r := gin.Default()
 	loadTemplates(r)
 
@@ -93,15 +91,34 @@ func startServer(config config) {
 			c.Redirect(http.StatusFound, "/login")
 			return
 		}
-		if _, err := ValidateJWT(tokenString, config.Secret); err != nil {
+		claims, err := ValidateJWT(tokenString, config.Secret)
+		if err != nil {
 			c.Redirect(http.StatusFound, "/login")
 			return
 		}
-		c.HTML(http.StatusOK, "index.html", templateContext)
+		userName := claims["user"].(string)
+		user, ok := config.Users[userName]
+		if !ok {
+			c.HTML(http.StatusUnauthorized, "error.html", gin.H{"error": "User not found"})
+			return
+		}
+		clients := map[string]Client{}
+		for _, clientName := range user.Clients {
+			client, ok := config.Clients[clientName]
+			if !ok {
+				c.HTML(http.StatusUnauthorized, "error.html", gin.H{"error": "Client not found"})
+				return
+			}
+			clients[clientName] = client
+		}
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"User":    user,
+			"Clients": clients,
+		})
 	})
 
 	r.GET("/login", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "login.html", templateContext)
+		c.HTML(http.StatusOK, "login.html", gin.H{})
 	})
 
 	r.POST("/login", func(c *gin.Context) {

@@ -7,6 +7,7 @@ type User struct {
 }
 
 type Client struct {
+	Schema   string
 	Target   string
 	Username string
 	Password string
