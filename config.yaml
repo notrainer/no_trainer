@@ -1,0 +1,24 @@
+users:
+  user:
+    password: user
+    username: user
+    clients:
+      - client1
+
+  admin:
+    password: admin
+    username: admin
+    clients:
+      - client1
+      - client2
+
+clients:
+  client1:
+    target: http://localhost:8080
+    password: client1
+    username: client1
+
+  client2:
+    target: http://localhost:8081
+    password: client2
+    username: client2
