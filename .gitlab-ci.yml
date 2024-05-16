@@ -25,10 +25,9 @@ release:
   script: |
     ID=$(cat <<EOF | docker build -q -
     FROM goreleaser/goreleaser:v1.26.1
-    RUN apk add --no-cache upx && \
-      curl -fsSL https://go.dev/dl/go1.22.2.linux-amd64.tar.gz -O && \
-      rm -rf /usr/local/go && \
-      tar -C /usr/local -xzf go1.22.2.linux-amd64.tar.gz
+    RUN apk add --no-cache upx nodejs npm && \
+      npm install -g pnpm && \
+      curl -fsSL https://go.dev/dl/go1.22.2.linux-amd64.tar.gz | tar -C /usr/local -xzf -
     EOF
     )
 
