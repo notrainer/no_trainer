@@ -84,7 +84,7 @@ announce:
     enabled: true
     chat_id: -1001510892782
     message_template: |
-      no_trainer {{ mdv2escape .Tag }}
+      {{ mdv2escape "no_trainer" }} {{ mdv2escape .Tag }}
 
       Awesome new version is out
       Check it out at {{ mdv2escape .ReleaseURL }}
