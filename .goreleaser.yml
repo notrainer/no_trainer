@@ -77,9 +77,6 @@ changelog:
       order: 4
     - title: Others
       order: 999
-gitlab_urls:
-  use_package_registry: true
-  use_job_token: true
 release:
   mode: replace
 announce:
