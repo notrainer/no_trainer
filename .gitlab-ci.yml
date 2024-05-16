@@ -18,7 +18,6 @@ release:
     DOCKER_REGISTRY: $CI_REGISTRY
     DOCKER_USERNAME: $CI_REGISTRY_USER
     DOCKER_PASSWORD: $CI_REGISTRY_PASSWORD
-    GITLAB_TOKEN: $CI_JOB_TOKEN
     # Disable shallow cloning so that goreleaser can diff between tags to
     # generate a changelog.
     GIT_DEPTH: 0
@@ -38,7 +37,7 @@ release:
       -w /go/src/gitlab.com/pidrakin/no_trainer \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -e DOCKER_USERNAME -e DOCKER_PASSWORD -e DOCKER_REGISTRY  \
-      -e GITLAB_TOKEN \
+      -e CI_JOB_TOKEN \
       -e TELEGRAM_TOKEN \
       $ID release --clean --fail-fast --skip=validate
     docker rmi $ID
