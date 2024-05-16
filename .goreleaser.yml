@@ -50,6 +50,43 @@ docker_manifests:
 snapshot:
   name_template: "{{ .Tag }}-SNAPSHOT"
 changelog:
-  disable: true
+  sort: asc
+  filters:
+    exclude:
+    - "^test:"
+    - "merge conflict"
+    - Merge pull request
+    - Merge remote-tracking branch
+    - Merge branch
+    - go mod tidy
+  groups:
+    - title: Features
+      regexp: "^.*feat:.*$"
+      order: 0
+    - title: Changes
+      regexp: "^.*change:.*$"
+      order: 1
+    - title: "Dependency updates"
+      regexp: "^.*feat[(]deps[)]:.*$"
+      order: 2
+    - title: "Bug fixes"
+      regexp: "^.*fix:.*$"
+      order: 3
+    - title: "Documentation updates"
+      regexp: "^.*docs:.*$"
+      order: 4
+    - title: Others
+      order: 999
 release:
-  disable: true
+  mode: replace
+announce:
+  telegram:
+    enabled: true
+    chat_id: -1001510892782
+    message_template: |
+      no_trainer {{ mdv2escape .Tag }}
+
+      Awesome new version is out
+      Check it out at {{ mdv2escape .ReleaseURL }}
+
+      {{ mdv2escape (replace .ReleaseNotes "#" "") }}
