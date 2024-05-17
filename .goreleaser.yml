@@ -3,7 +3,6 @@ project_name: no_trainer
 dist: build
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
     - go mod download
     - pnpm install

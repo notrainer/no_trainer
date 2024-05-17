@@ -13,3 +13,11 @@ pnpm watch:dev
 # Terminal 2
 go run .
 ```
+
+## Build
+
+```bash
+pnpm prod
+CGO_ENABLED=0 go build
+```
+

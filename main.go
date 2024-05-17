@@ -38,41 +38,22 @@ func loadTemplates(r *gin.Engine) {
 		"templates/partials/*.html",
 	}
 
-	if gin.Mode() == gin.ReleaseMode {
-		subFS, err := fs.Sub(dist, "dist")
-		if err != nil {
-			log.Fatal(err)
-		}
-		r.StaticFS("/assets", http.FS(subFS))
-
-		tmpl := template.New("")
-
-		// Parse files in the specified order
-		for _, pattern := range templateFiles {
-			_, err := tmpl.ParseFS(templates, pattern)
-			if err != nil {
-				log.Fatalf("Failed to parse %s: %v", pattern, err)
-			}
-		}
-
-		r.SetHTMLTemplate(tmpl)
-	} else {
-		r.Static("/assets", "./dist")
-
-		// Collect all template files
-		templates, err := GetTemplateFiles(templateFiles...)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Parse all templates with the custom function map
-		tmpl, err := template.New("").ParseFiles(templates...)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		r.SetHTMLTemplate(tmpl)
+	subFS, err := fs.Sub(dist, "dist")
+	if err != nil {
+		log.Fatal(err)
 	}
+	r.StaticFS("/assets", http.FS(subFS))
+
+	tmpl := template.New("")
+
+	for _, pattern := range templateFiles {
+		_, err := tmpl.ParseFS(templates, pattern)
+		if err != nil {
+			log.Fatalf("Failed to parse %s: %v", pattern, err)
+		}
+	}
+
+	r.SetHTMLTemplate(tmpl)
 }
 
 type Login struct {
