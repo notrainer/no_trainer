@@ -7,9 +7,10 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	"path/filepath"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -19,18 +20,6 @@ var templates embed.FS
 
 //go:embed dist/*
 var dist embed.FS
-
-func GetTemplateFiles(patterns ...string) ([]string, error) {
-	var files []string
-	for _, pattern := range patterns {
-		matches, err := filepath.Glob(pattern)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, matches...)
-	}
-	return files, nil
-}
 
 func loadTemplates(r *gin.Engine) {
 	templateFiles := []string{
@@ -83,18 +72,19 @@ func startServer(config config) {
 			c.HTML(http.StatusUnauthorized, "error.html", gin.H{"error": "User not found"})
 			return
 		}
-		clients := map[string]Client{}
-		for _, clientName := range user.Clients {
-			client, ok := config.Clients[clientName]
-			if !ok {
-				c.HTML(http.StatusUnauthorized, "error.html", gin.H{"error": "Client not found"})
-				return
+		targets := make(map[string]*url.URL)
+		for name, target := range user.Targets {
+			parsedURL, err := url.Parse(target)
+			if err != nil {
+				log.Printf("Failed to parse URL: %v", err)
+				continue
 			}
-			clients[clientName] = client
+			targets[name] = parsedURL
 		}
+		fmt.Printf("Targets: %+v\n", targets)
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"User":    user,
-			"Clients": clients,
+			"Targets": targets,
 		})
 	})
 
@@ -129,7 +119,10 @@ func startServer(config config) {
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	godotenv.Load()
+
 	pflag.IntP("port", "p", 8080, "Port to listen on")
+	pflag.StringP("secret", "s", "changeme", "JWT secret")
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 
@@ -137,10 +130,13 @@ func main() {
 	viper.AutomaticEnv()
 
 	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
+	viper.SetConfigType("json")
 	viper.AddConfigPath(".")
 
 	viper.ReadInConfig()
+
+	viper.Set("users", viper.GetStringMap("users"))
+	fmt.Printf("%+v\n", viper.GetStringMap("users"))
 
 	config := config{}
 	viper.Unmarshal(&config)

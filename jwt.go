@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func GenerateJWT(username string, secret []byte) (string, error) {
+func GenerateJWT(username string, secret string) (string, error) {
 	//make sure you use HS256 for signingMethods
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		//exp means expiration time. set it 1 minutes to check if it works.
@@ -17,7 +17,7 @@ func GenerateJWT(username string, secret []byte) (string, error) {
 		//as a user we set username from the input you may want to set something else..
 		"user": username,
 	})
-	tokenString, err := token.SignedString(secret)
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
 		fmt.Println(err)
 		return "", err
@@ -26,13 +26,13 @@ func GenerateJWT(username string, secret []byte) (string, error) {
 	return tokenString, nil
 }
 
-func ValidateJWT(tokenString string, secret []byte) (jwt.MapClaims, error) {
+func ValidateJWT(tokenString string, secret string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		return secret, nil
+		return []byte(secret), nil
 	})
 
 	if err != nil {

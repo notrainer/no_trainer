@@ -3,21 +3,12 @@ package main
 type User struct {
 	Username string
 	Password string
-	Clients  []string
+	Targets  map[string]string
 }
-
-type Client struct {
-	Schema   string
-	Target   string
-	Username string
-	Password string
-}
-
 type config struct {
-	Secret  []byte
-	Port    int
-	Users   map[string]User
-	Clients map[string]Client
+	Secret string
+	Port   int
+	Users  map[string]User
 }
 
 func (config *config) validateUser(username, password string) bool {

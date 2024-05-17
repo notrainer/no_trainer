@@ -16,7 +16,7 @@
             class="overflow-y-auto py-5 px-3 h-full bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700">
             <ul class="space-y-2" data-tabs-toggle="#tab-content" role="tablist">
                 <li>
-                    <a href="#"
+                    <a href="#home"
                         class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                         data-tabs-target="#first" role="tab">
                         <svg class="w-6 h-6 text-gray-400 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
@@ -28,9 +28,9 @@
                         </svg>
                     </a>
                 </li>
-                {{- range $name, $client := .Clients }}
+                {{- range $name, $url := .Targets }}
                 <li>
-                    <a href="#"
+                    <a href="#{{ $name }}"
                         class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                         data-tabs-target="#vnc-{{ $name }}" role="tab">
                         <svg class="w-6 h-6 text-gray-400 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
@@ -43,7 +43,6 @@
                                 d="M5 3a2 2 0 0 0-2 2v6h6V9a3 3 0 0 1 3-3h8c.35 0 .687.06 1 .17V5a2 2 0 0 0-2-2H5Zm4 10H3v2a2 2 0 0 0 2 2h4v-4Z"
                                 clip-rule="evenodd" />
                         </svg>
-
                     </a>
                 </li>
                 {{- end }}
@@ -52,33 +51,17 @@
     </aside>
     <main id="tab-content" class="flex-1 bg-white dark:bg-gray-900 h-full">
         <div id="first" role="tabpanel" class="hidden py-8 px-4 mx-auto max-w-screen-xl text-center lg:py-16">
-            <h1
-                class="mb-4 text-4xl font-extrabold tracking-tight leading-none text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
-                We invest in the world’s potential</h1>
-            <p class="mb-8 text-lg font-normal text-gray-500 lg:text-xl sm:px-16 lg:px-48 dark:text-gray-400">Here at
-                Flowbite we focus on markets where technology, innovation, and capital can unlock long-term value and
-                drive economic growth.</p>
-            <div class="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0">
-                <a href="#"
-                    class="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-white rounded-lg bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-900">
-                    Get started
-                    <svg class="w-3.5 h-3.5 ms-2 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
-                        fill="none" viewBox="0 0 14 10">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M1 5h12m0 0L9 1m4 4L9 9" />
-                    </svg>
-                </a>
-                <a href="#"
-                    class="py-3 px-5 sm:ms-4 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-70">
-                    Learn more
-                </a>
-            </div>
+            <h1 class="mb-4 text-4xl font-extrabold tracking-tight leading-none text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
+                Nmap Training
+            </h1>
+            <p class="mb-8 text-lg font-normal text-gray-500 lg:text-xl sm:px-16 lg:px-48 dark:text-gray-400">Willkommen num Nmap Training</p>
         </div>
-        {{- range $name, $client := .Clients }}
+        {{- range $name, $url := .Targets }}
         <div id="vnc-{{ $name }}" class="hidden h-full w-full" role="tabpanel">
-            <iframe src="{{ $client.Schema }}://{{ if gt (len $client.Username) 0 }}{{ $client.Username }}:{{ $client.Password }}@{{ end }}{{ $client.Target }}" class="w-full h-full"></iframe>
+            <iframe src="{{ $url.String }}" class="w-full h-full"></iframe>
         </div>
         {{- end }}
+    </main>
     </main>
 </div>
 {{ template "footer" . }}

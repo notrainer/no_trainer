@@ -1,0 +1,22 @@
+{
+    "secret": "super_secret_key",
+    "port": 8080,
+    "users": {
+        "user": {
+            "username": "user",
+            "password": "user",
+            "targets": {
+                "client1": "https://go.dev"
+            }
+        },
+        "admin": {
+            "username": "admin",
+            "password": "admin",
+            "targets": {
+                "client1": "https://go.dev",
+                "client2": "https://user:pass@localhost:3001",
+                "special_client": "http://admin:admin@localhost:3002"
+            }
+        }
+    }
+}

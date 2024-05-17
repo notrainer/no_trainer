@@ -2,3 +2,5 @@ node_modules
 dist
 build
 no_trainer
+.env
+config.json
