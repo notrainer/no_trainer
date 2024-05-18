@@ -50,7 +50,7 @@ type Login struct {
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
-func startServer(config config) {
+func startServer(config Config) {
 
 	r := gin.Default()
 	loadTemplates(r)
@@ -67,19 +67,19 @@ func startServer(config config) {
 			return
 		}
 		userName := claims["user"].(string)
-		user, ok := config.Users[userName]
-		if !ok {
+		user := config.getUser(userName)
+		if user == nil {
 			c.HTML(http.StatusUnauthorized, "error.html", gin.H{"error": "User not found"})
 			return
 		}
-		targets := make(map[string]*url.URL)
-		for name, target := range user.Targets {
-			parsedURL, err := url.Parse(target)
+		var targets []*Target
+		for _, target := range user.Targets {
+			_, err := url.Parse(target.Url)
 			if err != nil {
 				log.Printf("Failed to parse URL: %v", err)
 				continue
 			}
-			targets[name] = parsedURL
+			targets = append(targets, target)
 		}
 		fmt.Printf("Targets: %+v\n", targets)
 		c.HTML(http.StatusOK, "index.html", gin.H{
@@ -130,16 +130,20 @@ func main() {
 	viper.AutomaticEnv()
 
 	viper.SetConfigName("config")
-	viper.SetConfigType("json")
+	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 
 	viper.ReadInConfig()
 
-	viper.Set("users", viper.GetStringMap("users"))
-	fmt.Printf("%+v\n", viper.GetStringMap("users"))
-
-	config := config{}
+	config := Config{}
 	viper.Unmarshal(&config)
+
+	var globalTargets []*Target
+	viper.UnmarshalKey("targets", &globalTargets)
+
+	for _, user := range config.Users {
+		user.Targets = append(globalTargets, user.Targets...)
+	}
 
 	fmt.Printf("Config: %+v\n", config)
 

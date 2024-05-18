@@ -1,0 +1,25 @@
+secret: super_secret_key
+port: 8080
+users:
+  - username: user
+    password: user
+    targets:
+      - name: client1
+        icon: vnc-icon
+        url: https://go.dev
+  - username: admin
+    password: admin
+    targets:
+      - name: client1
+        icon: vnc-icon
+        url: https://go.dev
+      - name: client2
+        icon: vnc-icon
+        url: https://user:pass@localhost:3001
+      - name: special_client
+        icon: vnc-icon
+        url: http://admin:admin@localhost:3002
+targets:
+  - name: home
+    icon: home-icon
+    url: https://go.dev

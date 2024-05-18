@@ -4,3 +4,5 @@ build
 no_trainer
 .env
 config.json
+config.yaml
+.vscode

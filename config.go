@@ -1,19 +1,33 @@
 package main
 
+type Target struct {
+	Name string
+	Icon string
+	Url  string
+}
+
 type User struct {
 	Username string
 	Password string
-	Targets  map[string]string
-}
-type config struct {
-	Secret string
-	Port   int
-	Users  map[string]User
+	Targets  []*Target
 }
 
-func (config *config) validateUser(username, password string) bool {
-	if p, ok := config.Users[username]; ok {
-		return p.Password == password
+type Config struct {
+	Secret string
+	Port   int
+	Users  []*User
+}
+
+func (config *Config) getUser(username string) *User {
+	for _, u := range config.Users {
+		if u.Username == username {
+			return u
+		}
 	}
-	return false
+	return nil
+}
+
+func (config *Config) validateUser(username, password string) bool {
+	user := config.getUser(username)
+	return user != nil && user.Password == password
 }

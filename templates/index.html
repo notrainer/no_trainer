@@ -19,30 +19,15 @@
                     <a href="#home"
                         class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                         data-tabs-target="#first" role="tab">
-                        <svg class="w-6 h-6 text-gray-400 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
-                            aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                            fill="currentColor" viewBox="0 0 24 24">
-                            <path fill-rule="evenodd"
-                                d="M9 2.221V7H4.221a2 2 0 0 1 .365-.5L8.5 2.586A2 2 0 0 1 9 2.22ZM11 2v5a2 2 0 0 1-2 2H4v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2h-7ZM8 16a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H9a1 1 0 0 1-1-1Zm1-5a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H9Z"
-                                clip-rule="evenodd" />
-                        </svg>
+                        {{ template "home-icon" . }}
                     </a>
                 </li>
-                {{- range $name, $url := .Targets }}
+                {{- range $target := .Targets }}
                 <li>
-                    <a href="#{{ $name }}"
+                    <a href="#{{ $target.Name }}"
                         class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                        data-tabs-target="#vnc-{{ $name }}" role="tab">
-                        <svg class="w-6 h-6 text-gray-400 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"
-                            aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                            fill="currentColor" viewBox="0 0 24 24">
-                            <path fill-rule="evenodd"
-                                d="M12 8a1 1 0 0 0-1 1v10H9a1 1 0 1 0 0 2h11a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-8Zm4 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"
-                                clip-rule="evenodd" />
-                            <path fill-rule="evenodd"
-                                d="M5 3a2 2 0 0 0-2 2v6h6V9a3 3 0 0 1 3-3h8c.35 0 .687.06 1 .17V5a2 2 0 0 0-2-2H5Zm4 10H3v2a2 2 0 0 0 2 2h4v-4Z"
-                                clip-rule="evenodd" />
-                        </svg>
+                        data-tabs-target="#vnc-{{ $target.Name }}" role="tab">
+                        {{ template "icon" $target.Icon }}
                     </a>
                 </li>
                 {{- end }}
@@ -56,9 +41,9 @@
             </h1>
             <p class="mb-8 text-lg font-normal text-gray-500 lg:text-xl sm:px-16 lg:px-48 dark:text-gray-400">Willkommen num Nmap Training</p>
         </div>
-        {{- range $name, $url := .Targets }}
-        <div id="vnc-{{ $name }}" class="hidden h-full w-full" role="tabpanel">
-            <iframe src="{{ $url.String }}" class="w-full h-full"></iframe>
+        {{- range $target := .Targets }}
+        <div id="vnc-{{ $target.Name }}" class="hidden h-full w-full" role="tabpanel">
+            <iframe src="{{ $target.Url }}" class="w-full h-full"></iframe>
         </div>
         {{- end }}
     </main>
