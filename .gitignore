@@ -3,6 +3,7 @@ dist
 build
 no_trainer
 .env
+.envrc
 config.json
 config.yaml
 .vscode
