@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed templates/*
@@ -138,8 +139,15 @@ func main() {
 	config := Config{}
 	viper.Unmarshal(&config)
 
+	usersString := viper.GetString("users")
+	if usersString != "" {
+		yaml.Unmarshal([]byte(usersString), &config.Users)
+	}
+	targetsString := viper.GetString("targets")
 	var globalTargets []*Target
-	viper.UnmarshalKey("targets", &globalTargets)
+	if targetsString != "" {
+		yaml.Unmarshal([]byte(targetsString), &globalTargets)
+	}
 
 	for _, user := range config.Users {
 		user.Targets = append(globalTargets, user.Targets...)
