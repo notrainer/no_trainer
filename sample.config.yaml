@@ -15,10 +15,10 @@ users:
         url: https://go.dev
       - name: client2
         icon: vnc-icon
-        url: https://user:pass@localhost:3001
+        url: https://localhost:3001
       - name: special_client
         icon: vnc-icon
-        url: http://admin:admin@localhost:3002
+        url: http://localhost:3002
 targets:
   - name: home
     icon: home-icon
