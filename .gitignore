@@ -7,3 +7,4 @@ no_trainer
 config.json
 config.yaml
 .vscode
+.DS_Store

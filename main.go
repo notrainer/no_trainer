@@ -2,18 +2,19 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 //go:embed templates/*
@@ -120,40 +121,35 @@ func startServer(config Config) {
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	godotenv.Load()
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Fatal("cannot parse .env; check its syntax")
+	}
 
 	pflag.IntP("port", "p", 8080, "Port to listen on")
 	pflag.StringP("secret", "s", "changeme", "JWT secret")
 	pflag.Parse()
-	viper.BindPFlags(pflag.CommandLine)
-
-	viper.SetEnvPrefix("no_trainer")
-	viper.AutomaticEnv()
-
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-
-	viper.ReadInConfig()
-
-	config := Config{}
-	viper.Unmarshal(&config)
-
-	usersString := viper.GetString("users")
-	if usersString != "" {
-		yaml.Unmarshal([]byte(usersString), &config.Users)
-	}
-	targetsString := viper.GetString("targets")
-	var globalTargets []*Target
-	if targetsString != "" {
-		yaml.Unmarshal([]byte(targetsString), &globalTargets)
+	v := viper.New()
+	if err := v.BindPFlags(pflag.CommandLine); err != nil {
+		log.Fatal("cannot bind command-line configuration")
 	}
 
-	for _, user := range config.Users {
-		user.Targets = append(globalTargets, user.Targets...)
-	}
+	v.SetEnvPrefix("no_trainer")
+	v.AutomaticEnv()
 
-	fmt.Printf("Config: %+v\n", config)
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
+	v.AddConfigPath(".")
+
+	if err := v.ReadInConfig(); err != nil {
+		var missing viper.ConfigFileNotFoundError
+		if !errors.As(err, &missing) {
+			log.Fatal("cannot parse config.yaml; check its syntax and permissions")
+		}
+	}
+	config, err := loadConfig(v)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	startServer(config)
 }

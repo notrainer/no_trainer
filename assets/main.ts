@@ -1,2 +1,2 @@
-import 'flowbite';
-console.info('[App] starting...');
+import "flowbite";
+console.info("[App] starting...");
