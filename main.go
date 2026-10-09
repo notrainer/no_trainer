@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -51,26 +52,37 @@ type Login struct {
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
-func startServer(config Config) {
+func authenticatedUser(c *gin.Context, config Config) *User {
+	tokenString, err := c.Cookie("jwt")
+	if err != nil {
+		c.Redirect(http.StatusFound, "/login")
+		return nil
+	}
+	claims, err := ValidateJWT(tokenString, config.Secret)
+	if err != nil {
+		c.Redirect(http.StatusFound, "/login")
+		return nil
+	}
+	username, ok := claims["user"].(string)
+	if !ok {
+		c.Redirect(http.StatusFound, "/login")
+		return nil
+	}
+	user := config.getUser(username)
+	if user == nil {
+		c.HTML(http.StatusUnauthorized, "error.html", gin.H{"error": "User not found"})
+	}
+	return user
+}
+
+func setupRouter(config Config) *gin.Engine {
 
 	r := gin.Default()
 	loadTemplates(r)
 
 	r.GET("/", func(c *gin.Context) {
-		tokenString, err := c.Cookie("jwt")
-		if err != nil {
-			c.Redirect(http.StatusFound, "/login")
-			return
-		}
-		claims, err := ValidateJWT(tokenString, config.Secret)
-		if err != nil {
-			c.Redirect(http.StatusFound, "/login")
-			return
-		}
-		userName := claims["user"].(string)
-		user := config.getUser(userName)
+		user := authenticatedUser(c, config)
 		if user == nil {
-			c.HTML(http.StatusUnauthorized, "error.html", gin.H{"error": "User not found"})
 			return
 		}
 		var targets []*Target
@@ -82,11 +94,24 @@ func startServer(config Config) {
 			}
 			targets = append(targets, target)
 		}
-		fmt.Printf("Targets: %+v\n", targets)
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"User":    user,
 			"Targets": targets,
 		})
+	})
+
+	r.GET("/materials/:name", func(c *gin.Context) {
+		if authenticatedUser(c, config) == nil {
+			return
+		}
+		name := c.Param("name")
+		switch name {
+		case "nmap-training.pdf", "nmap-day1.pdf", "nmap-day2.pdf", "nmap-day3.pdf":
+			c.Header("Cache-Control", "private, no-store")
+			c.File(filepath.Join("/materials", name))
+		default:
+			c.Status(http.StatusNotFound)
+		}
 	})
 
 	r.GET("/login", func(c *gin.Context) {
@@ -110,11 +135,17 @@ func startServer(config Config) {
 			fmt.Println(err)
 			return
 		}
-		c.SetCookie("jwt", jwtToken, 60, "/", "", false, true)
+		c.SetCookie("jwt", jwtToken, int(sessionLifetime.Seconds()), "/", "", false, true)
 		c.Redirect(http.StatusFound, "/")
 	})
 
-	r.Run(fmt.Sprintf(":%d", config.Port))
+	return r
+}
+
+func startServer(config Config) {
+	if err := setupRouter(config).Run(fmt.Sprintf(":%d", config.Port)); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
@@ -152,8 +183,6 @@ func main() {
 	for _, user := range config.Users {
 		user.Targets = append(globalTargets, user.Targets...)
 	}
-
-	fmt.Printf("Config: %+v\n", config)
 
 	startServer(config)
 }

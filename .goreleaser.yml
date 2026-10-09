@@ -5,8 +5,9 @@ before:
   hooks:
     - go mod tidy
     - go mod download
-    - pnpm install
+    - pnpm install --frozen-lockfile
     - pnpm prod
+    - go test ./...
 builds:
   - id: linux-builds
     binary: no_trainer

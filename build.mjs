@@ -42,11 +42,8 @@ const outputCssFile = path.join(__dirname, 'dist', 'main.css');
 
 const distDir = path.join(__dirname, 'dist');
 
-if (fs.existsSync(distDir)) {
-    fs.rmSync(distDir + '/*', { recursive: true, force: true });
-} else {
-    fs.mkdirSync(distDir);
-}
+fs.rmSync(distDir, { recursive: true, force: true });
+fs.mkdirSync(distDir, { recursive: true });
 
 async function buildCSS() {
     try {
@@ -65,6 +62,7 @@ async function buildCSS() {
         }
     } catch (error) {
         console.error('Error building CSS:', error);
+        throw error;
     }
 }
 

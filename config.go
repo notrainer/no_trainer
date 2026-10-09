@@ -1,9 +1,11 @@
 package main
 
 type Target struct {
-	Name string
-	Icon string
-	Url  string
+	Name       string
+	Icon       string
+	Url        string
+	SSHCommand string `yaml:"ssh_command" json:"ssh_command"`
+	SSHHostKey string `yaml:"ssh_host_key" json:"ssh_host_key"`
 }
 
 type User struct {

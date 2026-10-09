@@ -19,6 +19,7 @@
                     <a href="#home"
                         class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                         data-tabs-target="#first" role="tab">
+                        <span class="sr-only">Anleitung und PDFs</span>
                         {{ template "home-icon" . }}
                     </a>
                 </li>
@@ -27,6 +28,7 @@
                     <a href="#{{ $target.Name }}"
                         class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
                         data-tabs-target="#vnc-{{ $target.Name }}" role="tab">
+                        <span class="sr-only">Desktop {{ $target.Name }}</span>
                         {{ template "icon" $target.Icon }}
                     </a>
                 </li>
@@ -34,19 +36,39 @@
             </ul>
         </div>
     </aside>
-    <main id="tab-content" class="flex-1 bg-white dark:bg-gray-900 h-full">
-        <div id="first" role="tabpanel" class="hidden py-8 px-4 mx-auto max-w-screen-xl text-center lg:py-16">
-            <h1 class="mb-4 text-4xl font-extrabold tracking-tight leading-none text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
+    <main id="tab-content" class="flex-1 bg-white dark:bg-gray-900 h-full overflow-y-auto">
+        <div id="first" role="tabpanel" class="hidden py-8 px-4 mx-auto max-w-screen-xl lg:py-16 text-gray-900 dark:text-white">
+            <h1 class="mb-4 text-4xl font-extrabold tracking-tight leading-none">
                 Nmap Training
             </h1>
-            <p class="mb-8 text-lg font-normal text-gray-500 lg:text-xl sm:px-16 lg:px-48 dark:text-gray-400">Willkommen num Nmap Training</p>
+            <p class="mb-8 text-lg">Willkommen, {{ .User.Username }}. Hier findest du deinen Zugang und die Kursfolien.</p>
+            <h2 class="mb-4 text-2xl font-bold">Desktop im Browser</h2>
+            {{- range $target := .Targets }}
+            <p class="mb-4">Öffne <strong>Desktop {{ $target.Name }}</strong> über das Desktop-Symbol links. Alternativ kannst du den <a href="{{ $target.Url }}" target="_blank" rel="noopener" class="underline">Desktop in einem eigenen Tab öffnen</a>. Verwende dieselben Zugangsdaten wie für die Portal-Anmeldung.</p>
+            {{- if $target.SSHCommand }}
+            <h2 class="mt-8 mb-4 text-2xl font-bold">Zugang per SSH: {{ $target.Name }}</h2>
+            <p class="mb-4">Öffne ein Terminal auf deinem Rechner. Unter Windows kannst du PowerShell oder Windows Terminal verwenden. Unter macOS und Linux verwendest du die Terminal-App. Gib diesen Befehl ein:</p>
+            <pre class="mb-4 p-4 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-x-auto"><code>{{ $target.SSHCommand }}</code></pre>
+            <p class="mb-4">Der SSH-Benutzername lautet <strong>abc</strong>. Verwende das <strong>Passwort deiner Portal-Anmeldung</strong>. Bei der Passworteingabe erscheinen keine Zeichen. Bestätige anschließend mit Enter.</p>
+            {{- if $target.SSHHostKey }}
+            <details class="mb-4"><summary class="cursor-pointer underline">Erste Verbindung: Server-Fingerabdruck prüfen</summary><p class="mt-4">Vergleiche den angezeigten ED25519-Fingerabdruck mit diesem Wert. Wenn er übereinstimmt, bestätige die Verbindung mit <code>yes</code>:</p><pre class="mt-4 p-4 overflow-x-auto"><code>{{ $target.SSHHostKey }}</code></pre></details>
+            {{- end }}
+            <p class="mb-4">SSH und der Browser-Desktop verwenden dasselbe Benutzerverzeichnis. Deine Arbeitsdateien liegen in <code>~/nmap-training-results</code>. Mit <code>exit</code> beendest du die SSH-Verbindung. Wenn die Verbindung fehlschlägt, prüfe den Port im Befehl. Manche Firmennetze sperren diese Ports. Der Browser-Zugang bleibt als Alternative verfügbar.</p>
+            {{- end }}
+            {{- end }}
+            <h2 class="mt-8 mb-4 text-2xl font-bold">Kursfolien als PDF</h2>
+            <p class="mb-4"><a href="/materials/nmap-training.pdf" target="_blank" rel="noopener" class="underline">Alle drei Trainingstage als ein PDF</a></p>
+            <ul class="space-y-2">
+                <li><a href="/materials/nmap-day1.pdf" target="_blank" rel="noopener" class="underline">Tag 1: Discovery und Basic Scans</a></li>
+                <li><a href="/materials/nmap-day2.pdf" target="_blank" rel="noopener" class="underline">Tag 2: NSE und Service Enumeration</a></li>
+                <li><a href="/materials/nmap-day3.pdf" target="_blank" rel="noopener" class="underline">Tag 3: NSE Development und Traffic Analysis</a></li>
+            </ul>
         </div>
         {{- range $target := .Targets }}
         <div id="vnc-{{ $target.Name }}" class="hidden h-full w-full" role="tabpanel">
-            <iframe src="{{ $target.Url }}" class="w-full h-full"></iframe>
+            <iframe src="{{ $target.Url }}" title="Desktop {{ $target.Name }}" loading="lazy" class="w-full h-full"></iframe>
         </div>
         {{- end }}
-    </main>
     </main>
 </div>
 {{ template "footer" . }}

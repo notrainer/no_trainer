@@ -7,11 +7,12 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+const sessionLifetime = 8 * time.Hour
+
 func GenerateJWT(username string, secret string) (string, error) {
 	//make sure you use HS256 for signingMethods
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		//exp means expiration time. set it 1 minutes to check if it works.
-		"exp": time.Now().Add(1 * time.Minute).Unix(),
+		"exp": time.Now().Add(sessionLifetime).Unix(),
 		//set authorized true
 		"authorized": true,
 		//as a user we set username from the input you may want to set something else..
