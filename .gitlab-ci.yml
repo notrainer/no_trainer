@@ -7,9 +7,9 @@ stages:
 
 release:
   stage: release
-  image: docker:stable
+  image: docker:29.8.2-cli
   services:
-    - docker:dind
+    - docker:29.8.2-dind
   only:
     refs:
       - tags
@@ -22,22 +22,27 @@ release:
     # generate a changelog.
     GIT_DEPTH: 0
   script: |
+    set -eu
     ID=$(cat <<EOF | docker build -q -
-    FROM goreleaser/goreleaser:v1.26.1
+    FROM goreleaser/goreleaser:v2.18.2
     RUN apk add --no-cache upx nodejs npm && \
-      npm install -g pnpm@8.15.9 && \
-      curl -fsSL https://go.dev/dl/go1.22.2.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+      npm install -g pnpm@12.8.1 && \
+      rm -rf /usr/local/go && \
+      curl -fsSL https://go.dev/dl/go1.27.1.linux-amd64.tar.gz | tar -C /usr/local -xzf -
     EOF
     )
 
     # GITLAB_TOKEN is needed to create GitLab releases.
     # DOCKER_* are needed to push Docker images.
-    docker run --rm --privileged \
-      -v $PWD:/go/src/gitlab.com/pidrakin/no_trainer \
+    docker run --rm --entrypoint /bin/sh \
+      -v "$PWD:/go/src/gitlab.com/pidrakin/no_trainer" \
       -w /go/src/gitlab.com/pidrakin/no_trainer \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -e DOCKER_USERNAME -e DOCKER_PASSWORD -e DOCKER_REGISTRY  \
       -e GITLAB_TOKEN \
       -e TELEGRAM_TOKEN \
-      $ID release --clean --fail-fast --skip=validate
-    docker rmi $ID
+      "$ID" -ec '
+        printf "%s" "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" --username "$DOCKER_USERNAME" --password-stdin
+        exec goreleaser release --clean
+      '
+    docker rmi "$ID"

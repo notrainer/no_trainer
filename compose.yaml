@@ -1,6 +1,6 @@
 services:
   server:
-    image: lscr.io/linuxserver/webtop:amd64-ubuntu-kde
+    image: lscr.io/linuxserver/webtop:ubuntu-kde
     container_name: server
     security_opt:
       - seccomp:unconfined #optional

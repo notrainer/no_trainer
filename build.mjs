@@ -1,144 +1,89 @@
-import autoprefixer from 'autoprefixer';
-import chokidar from 'chokidar';
-import cssnano from 'cssnano';
-import esbuild from 'esbuild';
-import fs from 'fs';
-import fsExtra from 'fs-extra';
-import path from 'path';
-import postcss from 'postcss';
-import atImport from 'postcss-import';
-import tailwindcss from 'tailwindcss';
-import { fileURLToPath } from 'url';
+import chokidar from "chokidar";
+import esbuild from "esbuild";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import postcss from "postcss";
+import tailwindcss from "@tailwindcss/postcss";
 
-// Construct __dirname equivalent in ES Module
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.dirname(fileURLToPath(import.meta.url));
+const watchMode = process.argv.includes("--watch") ||
+  process.argv.includes("-w");
+const devMode = process.argv.includes("--dev") || process.argv.includes("-D");
+const distDir = path.join(root, "dist");
 
-// Function to check if the script was run with `--watch` or `-w`
-function shouldWatch() {
-    const res = process.argv.includes('--watch') || process.argv.includes('-w');
-    if (res) {
-        console.log('Running in watch mode...');
-    }
-    return res;
-}
-
-// Function to check if the script was run with `--dev` or `-D`
-function isDevMode() {
-    const res = process.argv.includes('--dev') || process.argv.includes('-D');
-    if (res) {
-        console.log('Running in development mode...');
-    }
-    return res;
-}
-
-const watchMode = shouldWatch();
-const devMode = isDevMode();
-
-// Path to your source CSS file
-const srcCssFile = path.join(__dirname, 'assets', 'main.css');
-
-// Path to the output CSS file in the 'dist' directory
-const outputCssFile = path.join(__dirname, 'dist', 'main.css');
-
-const distDir = path.join(__dirname, 'dist');
-
-fs.rmSync(distDir, { recursive: true, force: true });
-fs.mkdirSync(distDir, { recursive: true });
+await fs.rm(distDir, { recursive: true, force: true });
+await fs.mkdir(distDir, { recursive: true });
 
 async function buildCSS() {
-    try {
-        const css = fs.readFileSync(srcCssFile, 'utf-8');
-        const plugins = [atImport(), tailwindcss, autoprefixer];
-        if (!devMode) {
-            plugins.push(cssnano);
-        }
-
-        const result = await postcss(plugins)
-            .process(css, { from: srcCssFile, to: outputCssFile, map: { inline: false } });
-
-        fs.writeFileSync(outputCssFile, result.css);
-        if (result.map) {
-            fs.writeFileSync(`${outputCssFile}.map`, result.map.toString());
-        }
-    } catch (error) {
-        console.error('Error building CSS:', error);
-        throw error;
-    }
+  const source = path.join(root, "assets/main.css");
+  const output = path.join(distDir, "main.css");
+  const css = await fs.readFile(source, "utf8");
+  const result = await postcss([tailwindcss({ optimize: !devMode })]).process(
+    css,
+    {
+      from: source,
+      to: output,
+      map: { inline: false },
+    },
+  );
+  await fs.writeFile(output, result.css);
+  if (result.map) {
+    await fs.writeFile(`${output}.map`, result.map.toString());
+  }
 }
-
-
-const srcJsFile = path.join(__dirname, 'assets', 'main.ts');
 
 async function buildJS() {
-    await esbuild.build({
-        entryPoints: [srcJsFile],
-        bundle: true,
-        outfile: path.join(distDir, 'main.js'),
-        sourcemap: true,
-        minify: true,
-        define: {
-            'process.env.NODE_ENV': devMode ? '"development"' : '"production"'
-        },
-        format: 'esm',
-        platform: 'browser'
-    });
+  await esbuild.build({
+    entryPoints: [path.join(root, "assets/main.ts")],
+    bundle: true,
+    outfile: path.join(distDir, "main.js"),
+    sourcemap: true,
+    minify: !devMode,
+    define: {
+      "process.env.NODE_ENV": devMode ? '"development"' : '"production"',
+    },
+    format: "esm",
+    platform: "browser",
+  });
 }
 
-async function copyImages() {
-    const srcDir = path.join(__dirname, 'assets', 'img');
-    const destDir = path.join(distDir, 'img');
-
-    try {
-        // Ensure the destination directory exists
-        fsExtra.ensureDirSync(destDir);
-
-        // Copy all files from srcDir to destDir
-        await fsExtra.copy(srcDir, destDir);
-        console.log('Images copied successfully!');
-    } catch (error) {
-        console.error('Error copying images:', error);
-    }
-}
-
-console.log('Building...')
+console.log("Building...");
 await buildJS();
 await buildCSS();
-// await copyImages();
-console.log('Done!')
+console.log("Done!");
 
 if (watchMode) {
-    const jsWatcher = chokidar.watch(['assets/**/*.js', 'assets/**/*.ts'], { ignored: /(^|[\/\\])\../ });
-    jsWatcher.on('change', async (file) => {
-        console.log(`File ${file} has been changed, rebuilding JavaScript...`);
-        await buildJS();
-        console.log(`Rebuilt JavaScript...`);
+  // Chokidar 4+ watches directories instead of glob patterns.
+  const watcher = chokidar.watch([
+    path.join(root, "assets"),
+    path.join(root, "templates"),
+  ], {
+    ignoreInitial: true,
+    ignored: (file, stats) =>
+      path.basename(file).startsWith(".") ||
+      (stats?.isFile() && !/\.(css|html|js|ts)$/.test(file)),
+  });
+  // Serialize rebuilds so rapid edits cannot overwrite newer output.
+  let pending = Promise.resolve();
+  watcher.on("all", (event, file) => {
+    if (!["add", "change", "unlink"].includes(event)) return;
+    pending = pending.then(async () => {
+      console.log(`Rebuilding ${file}...`);
+      await (/\.(js|ts)$/.test(file) ? buildJS() : buildCSS());
+      console.log("Done!");
+    }).catch((error) => console.error("Build failed:", error));
+  });
+  watcher.on("error", (error) => {
+    console.error("Watcher failed:", error);
+    process.exitCode = 1;
+    void watcher.close();
+  });
+  for (const signal of ["SIGINT", "SIGTERM"]) {
+    process.on(signal, async () => {
+      await watcher.close();
+      await pending;
     });
-    console.log('Watching for JavaScript changes...');
-
-    // Set up chokidar to watch CSS and HTML files
-    const cssWatcher = chokidar.watch(['assets/**/*.css', 'templates/**/*.html'], { ignored: /(^|[\/\\])\../ });
-    cssWatcher.on('change', async (file) => {
-        console.log(`File ${file} has been changed, rebuilding CSS...`);
-        await buildCSS();
-        console.log(`Rebuilt CSS...`);
-    });
-    console.log('Watching for CSS changes...');
-
-    // const imgWatcher = chokidar.watch(['assets/img/**/*'], { ignored: /(^|[\/\\])\../ });
-    // imgWatcher.on('change', async (file) => {
-    //     console.log(`Image file ${file} has been changed, copying images...`);
-    //     await copyImages();
-    //     console.log(`Copied images...`);
-    // });
-    // console.log('Watching for image changes...');
-
-    const disposeOnSignal = () => {
-        jsWatcher.close();
-        cssWatcher.close();
-        console.log('Stopped watching for changes.')
-        process.exit(0); // Exit the process cleanly
-    };
-
-    // Listen for SIGINT (Ctrl+C)
-    process.on('SIGINT', disposeOnSignal);
+  }
+  console.log("Watching assets and templates...");
 }

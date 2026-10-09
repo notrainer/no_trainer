@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
-	"gopkg.in/yaml.v3"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func TestAuthenticatedUser(t *testing.T) {
@@ -50,15 +49,16 @@ func TestAuthenticatedUser(t *testing.T) {
 }
 
 func TestAssignedAccessInstructions(t *testing.T) {
-	var users []*User
-	err := yaml.Unmarshal([]byte(`[{"username":"user7","password":"never-render-this-password","targets":[{"name":"client7","icon":"vnc-icon","url":"https://nmap.b3n.eu/client7/","ssh_command":"ssh -p 30007 abc@nmap.b3n.eu","ssh_host_key":"SHA256:example"}]}]`), &users)
+	t.Setenv("NO_TRAINER_USERS", `[{"username":"user7","password":"never-render-this-password","targets":[{"name":"client7","icon":"vnc-icon","url":"https://nmap.b3n.eu/client7/","ssh_command":"ssh -p 30007 abc@nmap.b3n.eu","ssh_host_key":"SHA256:example"}]}]`)
+	t.Setenv("NO_TRAINER_TARGETS", "")
+	config, err := loadConfig(testConfig())
 	if err != nil {
 		t.Fatal(err)
 	}
 	recorder := httptest.NewRecorder()
 	c, router := gin.CreateTestContext(recorder)
 	loadTemplates(router)
-	c.HTML(http.StatusOK, "index.html", gin.H{"User": users[0], "Targets": users[0].Targets})
+	c.HTML(http.StatusOK, "index.html", gin.H{"User": config.Users[0], "Targets": config.Users[0].Targets})
 	body := recorder.Body.String()
 	for _, expected := range []string{"ssh -p 30007 abc@nmap.b3n.eu", "SHA256:example", "/materials/nmap-training.pdf", "Passwort deiner Portal-Anmeldung"} {
 		if !strings.Contains(body, expected) {
@@ -73,8 +73,15 @@ func TestAssignedAccessInstructions(t *testing.T) {
 }
 
 func TestPortalRoutesRequireSession(t *testing.T) {
-	config := Config{Secret: "test-secret", Users: []*User{{Username: "user1", Password: "test-password"}}}
+	config := Config{Secret: "test-secret", Users: []*User{{Username: "user1", Password: "test-password", Targets: TargetList{{Name: "client1", Icon: "vnc-icon", Url: "/training-client/"}}}}}
 	router := setupRouter(config)
+	for _, path := range []string{"/login", "/assets/main.css", "/assets/main.js"} {
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
+		if recorder.Code != http.StatusOK || recorder.Body.Len() == 0 {
+			t.Fatalf("%s: expected a nonempty HTTP 200 response, got %d", path, recorder.Code)
+		}
+	}
 	for _, path := range []string{"/", "/materials/nmap-training.pdf", "/materials/nmap-day1.pdf", "/materials/nmap-day2.pdf", "/materials/nmap-day3.pdf"} {
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
@@ -98,6 +105,22 @@ func TestPortalRoutesRequireSession(t *testing.T) {
 	expires := time.Unix(int64(claims["exp"].(float64)), 0)
 	if remaining := time.Until(expires); remaining < 8*time.Hour-time.Minute || remaining > 8*time.Hour {
 		t.Fatalf("unexpected token lifetime: %s", remaining)
+	}
+
+	request = httptest.NewRequest(http.MethodGet, "/", nil)
+	request.AddCookie(cookies[0])
+	recorder = httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK || !strings.Contains(recorder.Body.String(), `data-tabs-target="#vnc-client1"`) || !strings.Contains(recorder.Body.String(), `src="/training-client/"`) {
+		t.Fatal("authenticated home page did not render assigned target navigation")
+	}
+
+	request = httptest.NewRequest(http.MethodPost, "/login", strings.NewReader("username=user1&password=wrong-password"))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recorder = httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusUnauthorized || len(recorder.Result().Cookies()) != 0 {
+		t.Fatal("rejected credentials did not return HTTP 401 without a session")
 	}
 
 	request = httptest.NewRequest(http.MethodGet, "/materials/not-course-material.pdf", nil)

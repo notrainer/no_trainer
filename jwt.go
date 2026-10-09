@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const sessionLifetime = 8 * time.Hour
@@ -34,13 +34,16 @@ func ValidateJWT(tokenString string, secret string) (jwt.MapClaims, error) {
 		}
 
 		return []byte(secret), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 
 	if err != nil {
 		return nil, err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if username, ok := claims["user"].(string); !ok || username == "" {
+			return nil, fmt.Errorf("invalid user claim")
+		}
 		return claims, nil
 	}
 	return nil, fmt.Errorf("invalid token")

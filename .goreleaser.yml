@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
 project_name: no_trainer
 dist: build
 before:
@@ -13,42 +14,31 @@ builds:
     binary: no_trainer
     env: [CGO_ENABLED=0]
     goos: [linux]
-    goarch: ["amd64"]
+    goarch: ["amd64", "arm64"]
     flags: [-trimpath]
     ldflags:
       - -s -w
-    no_unique_dist_dir: true
 upx:
   - enabled: true
     ids: [linux-builds]
     compress: best
     lzma: true
 archives:
-  - format: binary
-dockers:
+  - formats: [binary]
+dockers_v2:
   - ids: [linux-builds]
-    goos: linux
-    goarch: amd64
-    image_templates: ["registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}-amd64"]
     dockerfile: Containerfile
-    use: buildx
-    build_flag_templates:
-    - "--pull"
-    - "--label=org.opencontainers.image.created={{.Date}}"
-    - "--label=org.opencontainers.image.name={{.ProjectName}}"
-    - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-    - "--label=org.opencontainers.image.version={{.Version}}"
-    - "--label=org.opencontainers.image.source={{.GitURL}}"
-    - "--platform=linux/amd64"
-docker_manifests:
-  - name_template: "registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}"
-    image_templates:
-    - "registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}-amd64"
-  - name_template: "registry.gitlab.com/pidrakin/no_trainer:latest"
-    image_templates:
-    - "registry.gitlab.com/pidrakin/no_trainer:{{ .Version }}-amd64"
+    images: ["registry.gitlab.com/pidrakin/no_trainer"]
+    tags: ["{{ .Version }}", "latest"]
+    platforms: ["linux/amd64", "linux/arm64"]
+    flags: ["--pull"]
+    labels:
+      "org.opencontainers.image.created": "{{ .Date }}"
+      "org.opencontainers.image.revision": "{{ .FullCommit }}"
+      "org.opencontainers.image.version": "{{ .Version }}"
+      "org.opencontainers.image.source": "{{ .GitURL }}"
 snapshot:
-  name_template: "{{ .Tag }}-SNAPSHOT"
+  version_template: "{{ .Tag }}-SNAPSHOT"
 changelog:
   sort: asc
   filters:
