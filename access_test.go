@@ -155,3 +155,52 @@ func TestPortalRoutesRequireSession(t *testing.T) {
 		})
 	}
 }
+
+func TestGatewayDesktopAuthorization(t *testing.T) {
+	config := Config{Secret: "test-secret", Users: []*User{{Username: "user1", Targets: TargetList{{Url: "https://nmap.b3n.eu/client1/"}, {Url: "https://nmap.b3n.eu/"}}}}}
+	router := setupRouter(config)
+	valid, err := GenerateJWT("user1", config.Secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unknown, err := GenerateJWT("unknown", config.Secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name, token, uri string
+		status           int
+	}{
+		{"missing session", "", "/client1/", http.StatusUnauthorized},
+		{"invalid session", "invalid", "/client1/", http.StatusUnauthorized},
+		{"unknown user", unknown, "/client1/", http.StatusUnauthorized},
+		{"assigned desktop", valid, "/client1/", http.StatusNoContent},
+		{"assigned root", valid, "/client1", http.StatusNoContent},
+		{"assigned assets", valid, "/client1/assets/main.js?v=1", http.StatusNoContent},
+		{"assigned socket", valid, "/client1/ws", http.StatusNoContent},
+		{"other desktop", valid, "/client2/", http.StatusForbidden},
+		{"prefix collision", valid, "/client10/", http.StatusForbidden},
+		{"traversal", valid, "/client1/../client2/", http.StatusForbidden},
+		{"encoded traversal", valid, "/client1/%2e%2e/client2/", http.StatusForbidden},
+		{"encoded slash traversal", valid, "/client1%2f..%2fclient2/", http.StatusForbidden},
+		{"no original URI", valid, "", http.StatusForbidden},
+		{"absolute URI", valid, "https://other.example/client1/", http.StatusForbidden},
+		{"root target grants nothing", valid, "/client7/", http.StatusForbidden},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/internal/auth", nil)
+			request.Header.Set("X-Original-URI", test.uri)
+			if test.token != "" {
+				request.AddCookie(&http.Cookie{Name: "jwt", Value: test.token})
+			}
+			recorder := httptest.NewRecorder()
+			router.ServeHTTP(recorder, request)
+			if recorder.Code != test.status {
+				t.Fatalf("status %d, want %d", recorder.Code, test.status)
+			}
+			if recorder.Header().Get("WWW-Authenticate") != "" {
+				t.Fatal("Gateway check must not prompt for Basic Auth")
+			}
+		})
+	}
+}

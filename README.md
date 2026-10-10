@@ -67,7 +67,8 @@ This reproduces the local training credentials; replace them for deployment.
 Invalid users/targets or malformed configuration files stop startup with a clear
 error, without printing credentials. Exported environment variables override
 `.env`; both override `config.yaml`, and explicit command-line flags take priority.
-Rejected credentials return HTTP 401; the application does not generate HTTP 403.
+Rejected login credentials return HTTP 401. The gateway authorization endpoint
+returns HTTP 403 for desktops that are not assigned to the authenticated user.
 `pnpm dev` builds once; `pnpm watch:dev` watches assets and templates, including
 file additions and removals. Go embeds templates and assets at compile time, so
 restart `go run .` to see changes in the server.
@@ -108,7 +109,8 @@ Each target can provide optional `ssh_command` and `ssh_host_key` fields in
 `NO_TRAINER_USERS`. The authenticated home page shows only the current user's
 assigned target, SSH instructions, and presentation links. The SSH username is
 `abc`; the deployment configures its password to match the participant's portal
-password. Browser desktop authentication still passes through the gateway.
+password. The gateway authorizes browser desktop access using the portal session; users
+log in once.
 
 Mount the course PDFs read-only at `/materials`: `nmap-training.pdf` and
 `nmap-day1.pdf` through `nmap-day3.pdf`. The `/materials/:name` route requires
@@ -133,3 +135,22 @@ Sessions expire after eight hours. Passwords are currently compared as plaintext
 and the session cookie is not marked Secure; keep this lab application behind
 HTTPS and off public networks until its authentication is hardened. The training
 services contain intentional weaknesses and require isolated networking.
+
+## One portal login for desktop access
+
+Configure Nginx `auth_request` on each desktop location, using an internal
+subrequest to `GET /internal/auth`. Forward the browser's `Cookie` header and the
+original request URI in `X-Original-URI`; discard the request body. The endpoint
+returns 204 for the logged-in user's assigned target path, 401 for a missing or
+invalid session, and 403 for an unassigned path. Paths are decoded and normalized
+before checking permissions, including WebSocket and asset requests.
+
+Keep this authorization subrequest internal to Nginx. Redirect desktop 401
+responses to `/login`, remove gateway Basic Auth, and continue supplying the
+private desktop's native authorization at the proxy. No desktop password is sent
+to the browser. Assigned targets must use distinct, non-root paths such as
+`https://nmap.b3n.eu/client1/`.
+
+For a release without Telegram announcements, set the pipeline variable
+`NO_TRAINER_SKIP_ANNOUNCE=true`; the existing announcement behavior is otherwise
+unchanged.

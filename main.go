@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -80,6 +82,43 @@ func setupRouter(config Config) *gin.Engine {
 
 	r := gin.Default()
 	loadTemplates(r)
+
+	r.GET("/internal/auth", func(c *gin.Context) {
+		token, err := c.Cookie("jwt")
+		if err != nil {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+		claims, err := ValidateJWT(token, config.Secret)
+		if err != nil {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+		user := config.getUser(claims["user"].(string))
+		if user == nil {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+		original, err := url.ParseRequestURI(c.GetHeader("X-Original-URI"))
+		if err != nil || original.IsAbs() {
+			c.Status(http.StatusForbidden)
+			return
+		}
+		requestedPath := path.Clean(original.Path)
+		for _, target := range user.Targets {
+			targetURL, err := url.Parse(target.Url)
+			if err != nil || !strings.HasPrefix(targetURL.Path, "/") {
+				continue
+			}
+			targetPath := path.Clean(targetURL.Path)
+			// A root URL cannot grant access to every desktop on the gateway.
+			if targetPath != "/" && (requestedPath == targetPath || strings.HasPrefix(requestedPath, targetPath+"/")) {
+				c.Status(http.StatusNoContent)
+				return
+			}
+		}
+		c.Status(http.StatusForbidden)
+	})
 
 	r.GET("/", func(c *gin.Context) {
 		user := authenticatedUser(c, config)

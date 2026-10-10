@@ -44,7 +44,7 @@
             <p class="mb-8 text-lg">Willkommen, {{ .User.Username }}. Hier findest du deinen Zugang und die Kursfolien.</p>
             <h2 class="mb-4 text-2xl font-bold">Desktop im Browser</h2>
             {{- range $target := .Targets }}
-            <p class="mb-4">Öffne <strong>Desktop {{ $target.Name }}</strong> über das Desktop-Symbol links. Alternativ kannst du den <a href="{{ $target.Url }}" target="_blank" rel="noopener" class="underline">Desktop in einem eigenen Tab öffnen</a>. Verwende dieselben Zugangsdaten wie für die Portal-Anmeldung.</p>
+            <p class="mb-4">Öffne <strong>Desktop {{ $target.Name }}</strong> über das Desktop-Symbol links. Alternativ kannst du den <a href="{{ $target.Url }}" target="_blank" rel="noopener" class="underline">Desktop in einem eigenen Tab öffnen</a>. Deine Portal-Anmeldung öffnet auch deinen Desktop. Eine zweite Anmeldung ist nicht nötig.</p>
             {{- if $target.SSHCommand }}
             <h2 class="mt-8 mb-4 text-2xl font-bold">Zugang per SSH: {{ $target.Name }}</h2>
             <p class="mb-4">Öffne ein Terminal auf deinem Rechner. Unter Windows kannst du PowerShell oder Windows Terminal verwenden. Unter macOS und Linux verwendest du die Terminal-App. Gib diesen Befehl ein:</p>

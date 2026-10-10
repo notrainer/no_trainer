@@ -40,9 +40,12 @@ release:
       -v /var/run/docker.sock:/var/run/docker.sock \
       -e DOCKER_USERNAME -e DOCKER_PASSWORD -e DOCKER_REGISTRY  \
       -e GITLAB_TOKEN \
-      -e TELEGRAM_TOKEN \
+      -e TELEGRAM_TOKEN -e NO_TRAINER_SKIP_ANNOUNCE \
       "$ID" -ec '
         printf "%s" "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" --username "$DOCKER_USERNAME" --password-stdin
+        if [ "${NO_TRAINER_SKIP_ANNOUNCE:-}" = "true" ]; then
+          exec goreleaser release --clean --skip=announce
+        fi
         exec goreleaser release --clean
       '
     docker rmi "$ID"
