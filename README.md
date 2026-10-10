@@ -3,6 +3,10 @@
 A Go server with HTML templates that gives authenticated users one interface to
 embedded noVNC desktops and other training targets.
 
+Source, CI and releases are hosted at [notrainer/no_trainer](https://github.com/notrainer/no_trainer).
+Published images are available as `ghcr.io/notrainer/no_trainer:latest` and
+version tags such as `ghcr.io/notrainer/no_trainer:1.0.7`, for Linux amd64 and arm64.
+
 ## Projects
 
 These are three independent sibling Git repositories:
@@ -24,7 +28,7 @@ These are three independent sibling Git repositories:
 - `dist/`: generated assets embedded by Go; build these before compiling Go.
 - `sample.config.yaml`, `env.sample`: configuration examples, not production secrets.
 - `Containerfile`: Alpine runtime for a prebuilt Linux executable, running as UID 65532.
-- `.goreleaser.yml`, `.gitlab-ci.yml`: Linux amd64/arm64 builds and tagged releases.
+- `.goreleaser.yml`, `.github/workflows/`: validation, Linux amd64/arm64 builds and tagged releases.
 - `compose.yaml`: standalone Webtop example; it does not deploy the Go application.
 
 ## Toolchain and dependencies
@@ -94,13 +98,20 @@ podman build --pull=always -f Containerfile --platform linux/arm64 -t localhost/
 
 The image build context is `build/`, containing `linux/<architecture>/no_trainer`.
 GoReleaser 2.18.2 supplies this layout automatically through `dockers_v2`.
-Current release tooling is GoReleaser 2.18.2 and Docker 29.8.2; the application
-runtime is Alpine 3.24.2. Certificate installation runs on the build host's
+Current release tooling is GoReleaser 2.18.2, UPX 5.2.1 and Docker Buildx on
+GitHub Actions; the application runtime is Alpine 3.24.2. Certificate installation runs on the build host's
 architecture, allowing amd64/arm64 image assembly without target emulation.
-The GitLab job copies its checkout into the build container rather than bind-mounting
-a path that exists only in the separate job container.
-Run `goreleaser check` to validate release configuration. Creating a release tag
-triggers GitLab publishing and the configured Telegram announcement.
+Run `goreleaser check` to validate release configuration. Pushes to `master` and
+pull requests run asset checks, Go vet/tests, a binary build and release configuration
+validation. Pushing a new `v*` version tag publishes GitHub release assets and
+GHCR images using the workflow's built-in `GITHUB_TOKEN`; no personal release
+token or announcement secret is required. Releases do not send announcements.
+
+The GitLab commit history and tags were preserved during migration. Historical
+releases `v1.0.0` through `v1.0.3` retain their original downloadable binaries and
+checksum files on GitHub; their notes record the original release dates. Tags
+`v1.0.4` through `v1.0.6` had no GitLab release assets to migrate. The old GitLab
+registry remains available for rollback while deployments move to GHCR.
 
 Frontend assets are embedded in the Go binary, so build them before compiling or
 testing Go. Release builds use the committed lockfile and run the Go tests.
@@ -152,7 +163,3 @@ responses to `/login`, remove gateway Basic Auth, and continue supplying the
 private desktop's native authorization at the proxy. No desktop password is sent
 to the browser. Assigned targets must use distinct, non-root paths such as
 `https://nmap.b3n.eu/client1/`.
-
-For a release without Telegram announcements, set the pipeline variable
-`NO_TRAINER_SKIP_ANNOUNCE=true`; the existing announcement behavior is otherwise
-unchanged.

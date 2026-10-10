@@ -4,10 +4,11 @@ project_name: no_trainer
 dist: build
 before:
   hooks:
-    - go mod tidy
     - go mod download
     - pnpm install --frozen-lockfile
+    - pnpm check
     - pnpm prod
+    - go vet ./...
     - go test ./...
 builds:
   - id: linux-builds
@@ -28,7 +29,7 @@ archives:
 dockers_v2:
   - ids: [linux-builds]
     dockerfile: Containerfile
-    images: ["registry.gitlab.com/pidrakin/no_trainer"]
+    images: ["ghcr.io/notrainer/no_trainer"]
     tags: ["{{ .Version }}", "latest"]
     platforms: ["linux/amd64", "linux/arm64"]
     flags: ["--pull"]
@@ -36,7 +37,7 @@ dockers_v2:
       "org.opencontainers.image.created": "{{ .Date }}"
       "org.opencontainers.image.revision": "{{ .FullCommit }}"
       "org.opencontainers.image.version": "{{ .Version }}"
-      "org.opencontainers.image.source": "{{ .GitURL }}"
+      "org.opencontainers.image.source": "https://github.com/notrainer/no_trainer"
 snapshot:
   version_template: "{{ .Tag }}-SNAPSHOT"
 changelog:
@@ -68,15 +69,7 @@ changelog:
     - title: Others
       order: 999
 release:
+  github:
+    owner: notrainer
+    name: no_trainer
   mode: replace
-announce:
-  telegram:
-    enabled: true
-    chat_id: -1001510892782
-    message_template: |
-      {{ mdv2escape "no_trainer" }} {{ mdv2escape .Tag }}
-
-      Awesome new version is out
-      Check it out at {{ mdv2escape .ReleaseURL }}
-
-      {{ mdv2escape (replace .ReleaseNotes "#" "") }}

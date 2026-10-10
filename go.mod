@@ -1,4 +1,4 @@
-module gitlab.com/pidrakin/no_trainer
+module github.com/notrainer/no_trainer
 
 go 1.27.1
 

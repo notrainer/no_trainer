@@ -21,7 +21,9 @@ local edits. Do not commit, publish, deploy, or message anyone unless authorized
 - `sample.config.yaml` and `env.sample` document configuration; never read out or
   commit `.env`, `config.yaml`, secrets, or real user credentials.
 - `Containerfile` packages prebuilt `linux/<arch>/no_trainer` from a build context;
-  `.goreleaser.yml` uses `dockers_v2`; `.gitlab-ci.yml` publishes tagged releases.
+  `.goreleaser.yml` uses `dockers_v2`; `.github/workflows/release.yml` publishes
+  tagged GitHub releases and GHCR images. `.github/workflows/ci.yml` validates
+  pushes and pull requests. Releases do not send announcements.
 - `compose.yaml` is a separate Webtop example, not the application deployment.
 
 ## Commands and constraints
