@@ -156,3 +156,8 @@ to the browser. Assigned targets must use distinct, non-root paths such as
 For a release without Telegram announcements, set the pipeline variable
 `NO_TRAINER_SKIP_ANNOUNCE=true`; the existing announcement behavior is otherwise
 unchanged.
+
+Set `NO_TRAINER_IMAGES_ONLY=true` to publish container images without creating
+a GitLab release or uploading binary assets. Registry publication uses the
+built-in CI registry credentials and does not require a personal release token.
+Combine this with `NO_TRAINER_SKIP_ANNOUNCE=true` for an image-only deployment.
