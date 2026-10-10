@@ -69,7 +69,6 @@ changelog:
       order: 999
 release:
   mode: replace
-  disable: '{{ eq .Env.NO_TRAINER_IMAGES_ONLY "true" }}'
 announce:
   telegram:
     enabled: true

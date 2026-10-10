@@ -40,7 +40,7 @@ release:
       -v /var/run/docker.sock:/var/run/docker.sock \
       -e DOCKER_USERNAME -e DOCKER_PASSWORD -e DOCKER_REGISTRY  \
       -e GITLAB_TOKEN \
-      -e TELEGRAM_TOKEN -e NO_TRAINER_SKIP_ANNOUNCE -e NO_TRAINER_IMAGES_ONLY \
+      -e TELEGRAM_TOKEN -e NO_TRAINER_SKIP_ANNOUNCE \
       "$ID" -ec '
         git config --global --add safe.directory /src
         printf "%s" "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" --username "$DOCKER_USERNAME" --password-stdin
