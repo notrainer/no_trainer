@@ -34,18 +34,26 @@ release:
 
     # GITLAB_TOKEN is needed to create GitLab releases.
     # DOCKER_* are needed to push Docker images.
-    docker run --rm --entrypoint /bin/sh \
-      -v "$PWD:/go/src/gitlab.com/pidrakin/no_trainer" \
-      -w /go/src/gitlab.com/pidrakin/no_trainer \
+    # The Docker service cannot bind-mount the job container's checkout.
+    RELEASE_CONTAINER=$(docker create --entrypoint /bin/sh \
+      -w /src \
       -v /var/run/docker.sock:/var/run/docker.sock \
       -e DOCKER_USERNAME -e DOCKER_PASSWORD -e DOCKER_REGISTRY  \
       -e GITLAB_TOKEN \
       -e TELEGRAM_TOKEN -e NO_TRAINER_SKIP_ANNOUNCE \
       "$ID" -ec '
+        git config --global --add safe.directory /src
         printf "%s" "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" --username "$DOCKER_USERNAME" --password-stdin
         if [ "${NO_TRAINER_SKIP_ANNOUNCE:-}" = "true" ]; then
           exec goreleaser release --clean --skip=announce
         fi
         exec goreleaser release --clean
-      '
+      ')
+    trap 'docker rm -f "$RELEASE_CONTAINER" >/dev/null 2>&1 || true' EXIT
+    docker cp "$CI_PROJECT_DIR/." "$RELEASE_CONTAINER:/src/"
+    docker start --attach "$RELEASE_CONTAINER"
+    RELEASE_STATUS=$(docker inspect --format '{{.State.ExitCode}}' "$RELEASE_CONTAINER")
+    docker rm "$RELEASE_CONTAINER"
+    trap - EXIT
     docker rmi "$ID"
+    exit "$RELEASE_STATUS"

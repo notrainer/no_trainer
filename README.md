@@ -97,6 +97,8 @@ GoReleaser 2.18.2 supplies this layout automatically through `dockers_v2`.
 Current release tooling is GoReleaser 2.18.2 and Docker 29.8.2; the application
 runtime is Alpine 3.24.2. Certificate installation runs on the build host's
 architecture, allowing amd64/arm64 image assembly without target emulation.
+The GitLab job copies its checkout into the build container rather than bind-mounting
+a path that exists only in the separate job container.
 Run `goreleaser check` to validate release configuration. Creating a release tag
 triggers GitLab publishing and the configured Telegram announcement.
 
