@@ -1,16 +1,6 @@
 {{ template "header" . }}
-<button data-drawer-target="default-sidebar" data-drawer-toggle="default-sidebar" aria-controls="default-sidebar"
-    type="button"
-    class="inline-flex items-center p-2 mt-2 ml-3 text-sm text-gray-500 rounded-lg sm:hidden hover:bg-gray-100 focus:outline-hidden focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600">
-    <span class="sr-only">Open sidebar</span>
-    <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-        <path clip-rule="evenodd" fill-rule="evenodd"
-            d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z">
-        </path>
-    </svg>
-</button>
 <div class="fixed flex top-0 left-0 z-40 h-full w-full">
-    <aside id="default-sidebar" class="w-18 h-screen transition-transform -translate-x-full sm:translate-x-0"
+    <aside id="default-sidebar" class="w-18 shrink-0 h-screen"
         aria-label="Sidenav">
         <div
             class="overflow-y-auto py-5 px-3 h-full bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700">
@@ -33,10 +23,22 @@
                     </a>
                 </li>
                 {{- end }}
+                {{- if .NmapVisualizer }}
+                <li>
+                    <a href="#nmap-visualizer" title="Nmap XML ansehen"
+                        class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
+                        data-tabs-target="#nmap-visualizer" role="tab">
+                        <span class="sr-only">Nmap XML ansehen</span>
+                        <svg class="w-6 h-6" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M4 3h10l6 6v12H4zM14 3v6h6M8 13h8M8 17h8" />
+                        </svg>
+                    </a>
+                </li>
+                {{- end }}
             </ul>
         </div>
     </aside>
-    <main id="tab-content" class="flex-1 bg-white dark:bg-gray-900 h-full overflow-y-auto">
+    <main id="tab-content" class="flex-1 min-w-0 bg-white dark:bg-gray-900 h-full overflow-y-auto">
         <div id="first" role="tabpanel" class="hidden py-8 px-4 mx-auto max-w-screen-xl lg:py-16 text-gray-900 dark:text-white">
             <h1 class="mb-4 text-4xl font-extrabold tracking-tight leading-none">
                 Nmap Training
@@ -67,6 +69,11 @@
         {{- range $target := .Targets }}
         <div id="vnc-{{ $target.Name }}" class="hidden h-full w-full" role="tabpanel">
             <iframe src="{{ $target.Url }}" title="Desktop {{ $target.Name }}" loading="lazy" class="w-full h-full"></iframe>
+        </div>
+        {{- end }}
+        {{- if .NmapVisualizer }}
+        <div id="nmap-visualizer" class="hidden" role="tabpanel">
+            {{ template "nmap-visualizer" . }}
         </div>
         {{- end }}
     </main>

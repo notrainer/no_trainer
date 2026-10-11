@@ -204,3 +204,28 @@ func TestGatewayDesktopAuthorization(t *testing.T) {
 		})
 	}
 }
+
+func TestNmapVisualizerVisibilityAndAuthentication(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		config := Config{Secret: "test-secret", NmapVisualizer: enabled, Users: []*User{{Username: "user1"}}}
+		router := setupRouter(config)
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusFound || strings.Contains(recorder.Body.String(), "nmap-file") {
+			t.Fatal("anonymous request exposed the visualizer")
+		}
+		token, err := GenerateJWT("user1", config.Secret)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request = httptest.NewRequest(http.MethodGet, "/", nil)
+		request.AddCookie(&http.Cookie{Name: "jwt", Value: token})
+		recorder = httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		body := recorder.Body.String()
+		if recorder.Code != http.StatusOK || strings.Contains(body, `data-tabs-target="#nmap-visualizer"`) != enabled || strings.Contains(body, `id="nmap-file"`) != enabled {
+			t.Fatalf("visualizer menu/panel did not follow enabled=%v", enabled)
+		}
+	}
+}

@@ -135,8 +135,9 @@ func setupRouter(config Config) *gin.Engine {
 			targets = append(targets, target)
 		}
 		c.HTML(http.StatusOK, "index.html", gin.H{
-			"User":    user,
-			"Targets": targets,
+			"User":           user,
+			"Targets":        targets,
+			"NmapVisualizer": config.NmapVisualizer,
 		})
 	})
 

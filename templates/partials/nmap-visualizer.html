@@ -1,0 +1,35 @@
+{{ define "nmap-visualizer" }}
+<section class="nmap-viewer" aria-labelledby="nmap-title">
+    <h1 id="nmap-title">Nmap XML ansehen</h1>
+    <p>Öffne eine XML-Datei aus einem Nmap-Scan mit <code>-oX scan.xml</code> oder <code>-oA scan</code>.</p>
+    <p>Die Datei bleibt in deinem Browser. Sie wird weder hochgeladen noch gespeichert.</p>
+    <div class="nmap-controls">
+        <label>XML-Datei (max. 10 MiB)
+            <input id="nmap-file" type="file" accept=".xml,application/xml,text/xml">
+        </label>
+        <button id="nmap-clear" type="button">Zurücksetzen</button>
+    </div>
+    <p id="nmap-message" role="status" aria-live="polite">Noch keine Datei geöffnet.</p>
+    <div id="nmap-results" hidden>
+        <p id="nmap-summary" class="my-4 text-sm font-medium text-slate-300"></p>
+        <div class="nmap-controls">
+            <label>Hosts, Ports, Dienste oder NSE-Ausgaben suchen
+                <input id="nmap-search" type="search" placeholder="z. B. 192.168.1.10, 443 oder ssh">
+            </label>
+            <label>Port-Zustand
+                <select id="nmap-state">
+                    <option value="">Alle Zustände</option>
+                    <option value="open">open</option>
+                    <option value="filtered">filtered</option>
+                    <option value="closed">closed</option>
+                    <option value="open|filtered">open|filtered</option>
+                    <option value="closed|filtered">closed|filtered</option>
+                    <option value="unfiltered">unfiltered</option>
+                </select>
+            </label>
+        </div>
+        <p id="nmap-matches" role="status" class="mb-4 text-sm text-slate-400"></p>
+        <div id="nmap-hosts" class="space-y-4"></div>
+    </div>
+</section>
+{{ end }}

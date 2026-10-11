@@ -5,7 +5,7 @@ embedded noVNC desktops and other training targets.
 
 Source, CI and releases are hosted at [notrainer/no_trainer](https://github.com/notrainer/no_trainer).
 Published images are available as `ghcr.io/notrainer/no_trainer:latest` and
-version tags such as `ghcr.io/notrainer/no_trainer:1.0.7`, for Linux amd64 and arm64.
+version tags such as `ghcr.io/notrainer/no_trainer:1.1.0`, for Linux amd64 and arm64.
 
 ## Projects
 
@@ -24,6 +24,7 @@ These are three independent sibling Git repositories:
 - `jwt.go`, `jwt_test.go`: eight-hour HS256 sessions and token validation tests.
 - `templates/`: login, index and error pages; shared elements in `partials/`.
 - `assets/main.ts`, `assets/main.css`: Flowbite JavaScript and Tailwind 4 styles.
+- `assets/nmap-visualizer.ts`: local XML parsing, filtering and safe report rendering.
 - `build.mjs`: esbuild/PostCSS build and Chokidar directory watcher.
 - `dist/`: generated assets embedded by Go; build these before compiling Go.
 - `sample.config.yaml`, `env.sample`: configuration examples, not production secrets.
@@ -98,6 +99,28 @@ podman build --pull=always -f Containerfile --platform linux/arm64 -t localhost/
 
 The image build context is `build/`, containing `linux/<architecture>/no_trainer`.
 GoReleaser 2.18.2 supplies this layout automatically through `dockers_v2`.
+
+For a local XML viewer preview, build the image above with tag
+`localhost/no_trainer:xml-preview` and start it on loopback with test credentials:
+
+```bash
+NO_TRAINER_SECRET="$(openssl rand -hex 32)" podman run -d \
+  --name no-trainer-xml-preview \
+  --read-only --cap-drop=all --security-opt=no-new-privileges \
+  -p 127.0.0.1:18087:8080 \
+  -e NO_TRAINER_SECRET \
+  -e NO_TRAINER_NMAP_VISUALIZER=true \
+  -e 'NO_TRAINER_USERS={"tester":{"password":"nmap-test","targets":[]}}' \
+  --health-cmd='wget -q -O /dev/null http://127.0.0.1:8080/login' \
+  --health-interval=5s --health-timeout=3s --health-retries=3 \
+  localhost/no_trainer:xml-preview
+```
+
+Open `http://127.0.0.1:18087`, log in with `tester` / `nmap-test`, and choose
+**Nmap XML ansehen**. This preview contains no desktop targets or course PDFs.
+Check it with `podman healthcheck run no-trainer-xml-preview`; stop it with
+`podman stop no-trainer-xml-preview` and resume with `podman start no-trainer-xml-preview`.
+
 Current release tooling is GoReleaser 2.18.2, UPX 5.2.1 and Docker Buildx on
 GitHub Actions; the application runtime is Alpine 3.24.2. Certificate installation runs on the build host's
 architecture, allowing amd64/arm64 image assembly without target emulation.
@@ -131,6 +154,45 @@ a valid portal session and permits only these filenames. Sessions last eight
 hours so instructions and downloads remain available throughout the training day.
 
 ## Deployment checklist
+
+### Optional Nmap XML viewer
+
+Set `NO_TRAINER_NMAP_VISUALIZER=true` in the portal's environment (or
+`nmap_visualizer: true` in `config.yaml`) to enable the **Nmap XML ansehen**
+sidebar tab for all authenticated participants. It is disabled by default.
+Invalid boolean values stop startup. Environment settings override the YAML file.
+Restart the portal after changing the setting.
+
+The viewer is a small independent implementation inspired by the
+[Nmap XML Visualizer](https://github.com/sumanrox/sumanrox.github.io).
+Open an Nmap XML report produced with `-oX` or `-oA` (up to 10 MiB) to see host
+addresses/names, host status, OS matches, ports, services, versions and NSE output.
+Search filters hosts; the port-state selector filters their displayed ports.
+The Tailwind report table separates ports and protocols, and shows status badges
+(green for open/up, red for closed/down, amber for filtered or mixed states).
+Each NSE script has an expandable preview, a scrollable monospace output and a
+copy button. Host-level scripts use the same presentation. Duplicate addresses
+and hostnames appear only once in the host header.
+Collapsed port summaries and discovery-only scans are supported.
+Files are parsed locally in the browser, never uploaded or stored, and are cleared
+on reset or page reload. There is no extra top bar, analytics, external CDN or
+external report link. The portal's existing desktop navigation remains available.
+The narrow icon sidebar stays visible on mobile screens so all tabs are reachable.
+
+For Compose deployments, explicitly pass the switch to the **portal service**;
+an entry in the Compose env file alone does not add it to the container:
+
+```yaml
+environment:
+  NO_TRAINER_NMAP_VISUALIZER: "${NO_TRAINER_NMAP_VISUALIZER:-false}"
+```
+
+Use a published image containing the viewer, pull it, and recreate only the
+portal service. Verify login, the new sidebar tab, opening/filtering/resetting a
+report, and existing desktop navigation. Set the switch to `false` and recreate
+the portal to disable the feature; keep the previous image digest for rollback.
+
+### Portal rollout
 
 1. Keep deployment Compose files on published `image:` references. Record the
    currently deployed tag/digest before pulling an update.

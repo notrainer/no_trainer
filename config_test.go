@@ -63,6 +63,35 @@ func TestConfigFileUsers(t *testing.T) {
 	}
 }
 
+func TestNmapVisualizerConfiguration(t *testing.T) {
+	config, err := loadConfig(testConfig())
+	if err != nil || config.NmapVisualizer {
+		t.Fatalf("visualizer must default to disabled: %v", err)
+	}
+	for _, test := range []struct {
+		value   string
+		enabled bool
+		invalid bool
+	}{
+		{"true", true, false},
+		{"false", false, false},
+		{"invalid", false, true},
+	} {
+		t.Run(test.value, func(t *testing.T) {
+			t.Setenv("NO_TRAINER_NMAP_VISUALIZER", test.value)
+			v := testConfig()
+			v.SetConfigType("yaml")
+			if err := v.ReadConfig(strings.NewReader("nmap_visualizer: true\n")); err != nil {
+				t.Fatal(err)
+			}
+			config, err := loadConfig(v)
+			if (err != nil) != test.invalid || config.NmapVisualizer != test.enabled {
+				t.Fatalf("unexpected visualizer setting: enabled=%v, err=%v", config.NmapVisualizer, err)
+			}
+		})
+	}
+}
+
 func TestConfigRejectsInvalidUsersWithoutLeakingCredentials(t *testing.T) {
 	for _, users := range []string{`{"admin":`, `[{"username":"admin","password":[]}]`, `{"admin":null}`, `"private-secret"`} {
 		t.Setenv("NO_TRAINER_USERS", users)
