@@ -153,6 +153,27 @@ Mount the course PDFs read-only at `/materials`: `nmap-training.pdf` and
 a valid portal session and permits only these filenames. Sessions last eight
 hours so instructions and downloads remain available throughout the training day.
 
+## Standalone Nmap XML viewer
+
+Open [`standalone/nmap-visualizer.html`](standalone/nmap-visualizer.html) directly
+in your browser (double-click or `file://`), with no server, login or installation
+needed. Tailwind's browser script and generated styles load from jsDelivr
+(version 4.3.3), so an internet connection is required. Only the viewer's custom
+CSS and application logic are embedded. The inline script is formatted with
+readable function and variable names, without minification. You can copy the HTML anywhere.
+XML files stay in the browser. Search, port-state
+filters, host details and NSE output work like the portal viewer. If the browser
+blocks clipboard access for local files, select and copy the NSE text manually.
+
+The HTML is committed as a ready-to-use artifact and is independent of the
+portal build and deployment. To refresh it after viewer changes, use the existing
+Node/pnpm toolchain:
+
+```bash
+pnpm install --frozen-lockfile
+node build-standalone.mjs
+```
+
 ## Deployment checklist
 
 ### Optional Nmap XML viewer
