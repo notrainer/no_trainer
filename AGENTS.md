@@ -16,7 +16,7 @@ local edits. Do not commit, publish, deploy, or message anyone unless authorized
 - `templates/*.html` and `templates/partials/` are Go HTML templates.
 - `assets/main.ts` imports Flowbite; `assets/main.css` configures Tailwind 4,
   source scanning, dark mode and the primary color palette.
-- `build.mjs` uses esbuild and `@tailwindcss/postcss`; Chokidar 5 watches directories.
+- `build.mjs` uses esbuild and `@tailwindcss/postcss`; Chokidar 6 watches directories.
 - `dist/`, `build/`, `node_modules/`, and `no_trainer` are generated/ignored.
 - `sample.config.yaml` and `env.sample` document configuration; never read out or
   commit `.env`, `config.yaml`, secrets, or real user credentials.
@@ -28,7 +28,7 @@ local edits. Do not commit, publish, deploy, or message anyone unless authorized
 
 ## Commands and constraints
 
-Keep Go 1.27.1+, Node 22+ and pnpm 12.8.1 for this existing project; avoid an
+Keep Go 1.27.1+, Node 22.22+ and pnpm 12.8.1 for this existing project; avoid an
 unrelated package-manager migration. Commit manifests and lockfiles together.
 Use `pnpm install --frozen-lockfile`, `pnpm check`, `pnpm prod`, `go vet ./...`,
 `go test ./...`, and `CGO_ENABLED=0 go build -trimpath -o no_trainer .`.

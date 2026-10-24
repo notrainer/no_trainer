@@ -34,12 +34,12 @@ These are three independent sibling Git repositories:
 
 ## Toolchain and dependencies
 
-Use Go 1.27.1+, Node.js 22+ and pnpm 12.8.1. Node/pnpm remain the existing asset
+Use Go 1.27.1+, Node.js 22.22+ and pnpm 12.8.1. Node/pnpm remain the existing asset
 toolchain. `go.mod`/`go.sum` and `package.json`/`pnpm-lock.yaml` are the dependency
 sources of truth. `pnpm-workspace.yaml` permits esbuild's install script.
 
 The October 2026 update uses Gin 1.12, JWT v5, maintained `go.yaml.in/yaml/v3`,
-Tailwind 4.3, Flowbite 4, Chokidar 5 and TypeScript 7. Tailwind's PostCSS plugin
+Tailwind 4.3, Flowbite 4, Chokidar 6 and TypeScript 7. Tailwind's PostCSS plugin
 handles imports, prefixing and optimization, replacing the old separate plugins.
 Its CSS configuration lives in `assets/main.css`.
 
