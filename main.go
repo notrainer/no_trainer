@@ -36,7 +36,7 @@ func loadTemplates(r *gin.Engine) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	r.StaticFS("/assets", http.FS(subFS))
+	r.StaticFS("/portal-assets", http.FS(subFS))
 
 	tmpl := template.New("")
 
@@ -78,6 +78,15 @@ func authenticatedUser(c *gin.Context, config Config) *User {
 	return user
 }
 
+// The unmodified Weblua image uses root-relative routes and asset URLs.
+func isWebluaPath(requestedPath string) bool {
+	switch requestedPath {
+	case "/playground", "/embed", "/favicon.svg", "/favicon.png", "/apple-touch-icon.png", "/site.webmanifest", "/icon-192.png", "/icon-512.png":
+		return true
+	}
+	return strings.HasPrefix(requestedPath, "/assets/")
+}
+
 func setupRouter(config Config) *gin.Engine {
 
 	r := gin.Default()
@@ -105,6 +114,10 @@ func setupRouter(config Config) *gin.Engine {
 			return
 		}
 		requestedPath := path.Clean(original.Path)
+		if config.Weblua && isWebluaPath(requestedPath) {
+			c.Status(http.StatusNoContent)
+			return
+		}
 		for _, target := range user.Targets {
 			targetURL, err := url.Parse(target.Url)
 			if err != nil || !strings.HasPrefix(targetURL.Path, "/") {
@@ -135,9 +148,9 @@ func setupRouter(config Config) *gin.Engine {
 			targets = append(targets, target)
 		}
 		c.HTML(http.StatusOK, "index.html", gin.H{
-			"User":           user,
-			"Targets":        targets,
-			"NmapVisualizer": config.NmapVisualizer,
+			"User":    user,
+			"Targets": targets,
+			"Weblua":  config.Weblua,
 		})
 	})
 

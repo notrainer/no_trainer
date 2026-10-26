@@ -47,10 +47,10 @@ func (targets *TargetList) UnmarshalYAML(node *yaml.Node) error {
 }
 
 type Config struct {
-	Secret         string
-	Port           int
-	Users          []*User
-	NmapVisualizer bool
+	Secret string
+	Port   int
+	Users  []*User
+	Weblua bool
 }
 
 // Environment variables contain YAML/JSON strings; config files already contain
@@ -68,12 +68,12 @@ func loadConfig(v *viper.Viper) (Config, error) {
 	if config.Port < 1 || config.Port > 65535 {
 		return Config{}, fmt.Errorf("port must be between 1 and 65535")
 	}
-	if v.IsSet("nmap_visualizer") {
-		enabled, err := strconv.ParseBool(v.GetString("nmap_visualizer"))
+	if v.IsSet("weblua") {
+		enabled, err := strconv.ParseBool(v.GetString("weblua"))
 		if err != nil {
-			return Config{}, fmt.Errorf("nmap_visualizer must be true or false")
+			return Config{}, fmt.Errorf("weblua must be true or false")
 		}
-		config.NmapVisualizer = enabled
+		config.Weblua = enabled
 	}
 	data, err := configYAML(v, "users")
 	if err != nil {

@@ -100,27 +100,6 @@ podman build --pull=always -f Containerfile --platform linux/arm64 -t localhost/
 The image build context is `build/`, containing `linux/<architecture>/no_trainer`.
 GoReleaser 2.18.2 supplies this layout automatically through `dockers_v2`.
 
-For a local XML viewer preview, build the image above with tag
-`localhost/no_trainer:xml-preview` and start it on loopback with test credentials:
-
-```bash
-NO_TRAINER_SECRET="$(openssl rand -hex 32)" podman run -d \
-  --name no-trainer-xml-preview \
-  --read-only --cap-drop=all --security-opt=no-new-privileges \
-  -p 127.0.0.1:18087:8080 \
-  -e NO_TRAINER_SECRET \
-  -e NO_TRAINER_NMAP_VISUALIZER=true \
-  -e 'NO_TRAINER_USERS={"tester":{"password":"nmap-test","targets":[]}}' \
-  --health-cmd='wget -q -O /dev/null http://127.0.0.1:8080/login' \
-  --health-interval=5s --health-timeout=3s --health-retries=3 \
-  localhost/no_trainer:xml-preview
-```
-
-Open `http://127.0.0.1:18087`, log in with `tester` / `nmap-test`, and choose
-**Nmap XML ansehen**. This preview contains no desktop targets or course PDFs.
-Check it with `podman healthcheck run no-trainer-xml-preview`; stop it with
-`podman stop no-trainer-xml-preview` and resume with `podman start no-trainer-xml-preview`.
-
 Current release tooling is GoReleaser 2.18.2, UPX 5.2.1 and Docker Buildx on
 GitHub Actions; the application runtime is Alpine 3.24.2. Certificate installation runs on the build host's
 architecture, allowing amd64/arm64 image assembly without target emulation.
@@ -162,7 +141,7 @@ needed. Tailwind's browser script and generated styles load from jsDelivr
 CSS and application logic are embedded. The inline script is formatted with
 readable function and variable names, without minification. You can copy the HTML anywhere.
 XML files stay in the browser. Search, port-state
-filters, host details and NSE output work like the portal viewer. If the browser
+filters, host details and NSE output are included. If the browser
 blocks clipboard access for local files, select and copy the NSE text manually.
 
 The HTML is committed as a ready-to-use artifact and is independent of the
@@ -176,42 +155,31 @@ node build-standalone.mjs
 
 ## Deployment checklist
 
-### Optional Nmap XML viewer
+### Optional Weblua playground
 
-Set `NO_TRAINER_NMAP_VISUALIZER=true` in the portal's environment (or
-`nmap_visualizer: true` in `config.yaml`) to enable the **Nmap XML ansehen**
-sidebar tab for all authenticated participants. It is disabled by default.
-Invalid boolean values stop startup. Environment settings override the YAML file.
-Restart the portal after changing the setting.
+Set `NO_TRAINER_WEBLUA=true` (or `weblua: true` in `config.yaml`) to enable
+**Weblua – Lua ausprobieren** in the authenticated sidebar. It is disabled by
+default; invalid booleans stop startup, and environment settings override YAML.
+The tab embeds `/playground` with the full editor. Lua runs in browser WebAssembly;
+projects persist in that browser's IndexedDB. Switching portal tabs preserves the
+editor session. The XML viewer is available only as the standalone HTML above,
+also bundled on participant desktops; `NO_TRAINER_NMAP_VISUALIZER` is retired.
 
-The viewer is a small independent implementation inspired by the
-[Nmap XML Visualizer](https://github.com/sumanrox/sumanrox.github.io).
-Open an Nmap XML report produced with `-oX` or `-oA` (up to 10 MiB) to see host
-addresses/names, host status, OS matches, ports, services, versions and NSE output.
-Search filters hosts; the port-state selector filters their displayed ports.
-The Tailwind report table separates ports and protocols, and shows status badges
-(green for open/up, red for closed/down, amber for filtered or mixed states).
-Each NSE script has an expandable preview, a scrollable monospace output and a
-copy button. Host-level scripts use the same presentation. Duplicate addresses
-and hostnames appear only once in the host header.
-Collapsed port summaries and discovery-only scans are supported.
-Files are parsed locally in the browser, never uploaded or stored, and are cleared
-on reset or page reload. There is no extra top bar, analytics, external CDN or
-external report link. The portal's existing desktop navigation remains available.
-The narrow icon sidebar stays visible on mobile screens so all tabs are reachable.
+The course deployment runs the published `ghcr.io/notrainer/weblua:latest` image
+on its access network, without host ports or lab access. The gateway sends
+`/playground`, `/embed`, `/assets/` and Weblua's icons/manifest to that container,
+using `/internal/auth` for every request. Anonymous sessions get HTTP 401 from
+the auth check; authenticated participants get HTTP 204 only when Weblua is
+enabled. Desktop permissions remain tied to each participant's assigned targets.
+Portal assets use `/portal-assets/` so the published Weblua image can keep its
+root-relative asset and share URLs without rewriting.
 
-For Compose deployments, explicitly pass the switch to the **portal service**;
-an entry in the Compose env file alone does not add it to the container:
-
-```yaml
-environment:
-  NO_TRAINER_NMAP_VISUALIZER: "${NO_TRAINER_NMAP_VISUALIZER:-false}"
-```
-
-Use a published image containing the viewer, pull it, and recreate only the
-portal service. Verify login, the new sidebar tab, opening/filtering/resetting a
-report, and existing desktop navigation. Set the switch to `false` and recreate
-the portal to disable the feature; keep the previous image digest for rollback.
+Publish the portal release and gateway image before installing the updated course
+Compose. Pull and reconcile only `weblua`, `notrainer`, and `entrypoint`, then verify
+login, Lua execution, tab switching, browser reload recovery, protected worker/WASM
+assets and existing desktop access. Set `NO_TRAINER_WEBLUA=false` and recreate the
+portal to hide the tab and deny Weblua requests. Keep the previous images and
+configuration for rollback; see the course deployment README for the commands.
 
 ### Portal rollout
 
@@ -223,7 +191,7 @@ the portal to disable the feature; keep the previous image digest for rollback.
 3. Pull the chosen published image, then restart the application. Bind port 8080
    to loopback or a private network and use an HTTPS reverse proxy.
 4. Verify `/login` returns HTTP 200, `/` redirects without a session, and a valid
-   login loads target navigation plus `/assets/main.css` and `/assets/main.js`.
+   login loads target navigation plus `/portal-assets/main.css` and `/portal-assets/main.js`.
 5. If verification fails, restore the previous image tag/digest and configuration
    and restart. This app has no database migration.
 

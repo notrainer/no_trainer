@@ -63,10 +63,10 @@ func TestConfigFileUsers(t *testing.T) {
 	}
 }
 
-func TestNmapVisualizerConfiguration(t *testing.T) {
+func TestWebluaConfiguration(t *testing.T) {
 	config, err := loadConfig(testConfig())
-	if err != nil || config.NmapVisualizer {
-		t.Fatalf("visualizer must default to disabled: %v", err)
+	if err != nil || config.Weblua {
+		t.Fatalf("Weblua must default to disabled: %v", err)
 	}
 	for _, test := range []struct {
 		value   string
@@ -78,15 +78,15 @@ func TestNmapVisualizerConfiguration(t *testing.T) {
 		{"invalid", false, true},
 	} {
 		t.Run(test.value, func(t *testing.T) {
-			t.Setenv("NO_TRAINER_NMAP_VISUALIZER", test.value)
+			t.Setenv("NO_TRAINER_WEBLUA", test.value)
 			v := testConfig()
 			v.SetConfigType("yaml")
-			if err := v.ReadConfig(strings.NewReader("nmap_visualizer: true\n")); err != nil {
+			if err := v.ReadConfig(strings.NewReader("weblua: true\n")); err != nil {
 				t.Fatal(err)
 			}
 			config, err := loadConfig(v)
-			if (err != nil) != test.invalid || config.NmapVisualizer != test.enabled {
-				t.Fatalf("unexpected visualizer setting: enabled=%v, err=%v", config.NmapVisualizer, err)
+			if (err != nil) != test.invalid || config.Weblua != test.enabled {
+				t.Fatalf("unexpected Weblua setting: enabled=%v, err=%v", config.Weblua, err)
 			}
 		})
 	}

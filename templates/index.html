@@ -23,14 +23,14 @@
                     </a>
                 </li>
                 {{- end }}
-                {{- if .NmapVisualizer }}
+                {{- if .Weblua }}
                 <li>
-                    <a href="#nmap-visualizer" title="Nmap XML ansehen"
+                    <a href="#weblua" title="Weblua – Lua ausprobieren"
                         class="flex items-center p-2 text-base font-normal text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
-                        data-tabs-target="#nmap-visualizer" role="tab">
-                        <span class="sr-only">Nmap XML ansehen</span>
+                        data-tabs-target="#weblua" role="tab">
+                        <span class="sr-only">Weblua – Lua ausprobieren</span>
                         <svg class="w-6 h-6" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M4 3h10l6 6v12H4zM14 3v6h6M8 13h8M8 17h8" />
+                            <path d="m8 6-6 6 6 6m8-12 6 6-6 6M14 4l-4 16" />
                         </svg>
                     </a>
                 </li>
@@ -71,9 +71,9 @@
             <iframe src="{{ $target.Url }}" title="Desktop {{ $target.Name }}" loading="lazy" class="w-full h-full"></iframe>
         </div>
         {{- end }}
-        {{- if .NmapVisualizer }}
-        <div id="nmap-visualizer" class="hidden" role="tabpanel">
-            {{ template "nmap-visualizer" . }}
+        {{- if .Weblua }}
+        <div id="weblua" class="hidden h-full w-full" role="tabpanel">
+            <iframe src="/playground" title="Weblua – Lua ausprobieren" loading="lazy" allow="clipboard-write" class="w-full h-full"></iframe>
         </div>
         {{- end }}
     </main>

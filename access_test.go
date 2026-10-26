@@ -75,7 +75,7 @@ func TestAssignedAccessInstructions(t *testing.T) {
 func TestPortalRoutesRequireSession(t *testing.T) {
 	config := Config{Secret: "test-secret", Users: []*User{{Username: "user1", Password: "test-password", Targets: TargetList{{Name: "client1", Icon: "vnc-icon", Url: "/training-client/"}}}}}
 	router := setupRouter(config)
-	for _, path := range []string{"/login", "/assets/main.css", "/assets/main.js"} {
+	for _, path := range []string{"/login", "/portal-assets/main.css", "/portal-assets/main.js"} {
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
 		if recorder.Code != http.StatusOK || recorder.Body.Len() == 0 {
@@ -176,7 +176,7 @@ func TestGatewayDesktopAuthorization(t *testing.T) {
 		{"unknown user", unknown, "/client1/", http.StatusUnauthorized},
 		{"assigned desktop", valid, "/client1/", http.StatusNoContent},
 		{"assigned root", valid, "/client1", http.StatusNoContent},
-		{"assigned assets", valid, "/client1/assets/main.js?v=1", http.StatusNoContent},
+		{"assigned assets", valid, "/client1/portal-assets/main.js?v=1", http.StatusNoContent},
 		{"assigned socket", valid, "/client1/ws", http.StatusNoContent},
 		{"other desktop", valid, "/client2/", http.StatusForbidden},
 		{"prefix collision", valid, "/client10/", http.StatusForbidden},
@@ -205,15 +205,15 @@ func TestGatewayDesktopAuthorization(t *testing.T) {
 	}
 }
 
-func TestNmapVisualizerVisibilityAndAuthentication(t *testing.T) {
+func TestWebluaVisibilityAndAuthentication(t *testing.T) {
 	for _, enabled := range []bool{false, true} {
-		config := Config{Secret: "test-secret", NmapVisualizer: enabled, Users: []*User{{Username: "user1"}}}
+		config := Config{Secret: "test-secret", Weblua: enabled, Users: []*User{{Username: "user1"}}}
 		router := setupRouter(config)
 		request := httptest.NewRequest(http.MethodGet, "/", nil)
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, request)
-		if recorder.Code != http.StatusFound || strings.Contains(recorder.Body.String(), "nmap-file") {
-			t.Fatal("anonymous request exposed the visualizer")
+		if recorder.Code != http.StatusFound || strings.Contains(recorder.Body.String(), "/playground") {
+			t.Fatal("anonymous request exposed the Weblua")
 		}
 		token, err := GenerateJWT("user1", config.Secret)
 		if err != nil {
@@ -224,8 +224,54 @@ func TestNmapVisualizerVisibilityAndAuthentication(t *testing.T) {
 		recorder = httptest.NewRecorder()
 		router.ServeHTTP(recorder, request)
 		body := recorder.Body.String()
-		if recorder.Code != http.StatusOK || strings.Contains(body, `data-tabs-target="#nmap-visualizer"`) != enabled || strings.Contains(body, `id="nmap-file"`) != enabled {
-			t.Fatalf("visualizer menu/panel did not follow enabled=%v", enabled)
+		if strings.Contains(body, "nmap-visualizer") || strings.Contains(body, "nmap-file") {
+			t.Fatal("portal still renders the XML viewer")
+		}
+		if recorder.Code != http.StatusOK || strings.Contains(body, `data-tabs-target="#weblua"`) != enabled || strings.Contains(body, `src="/playground"`) != enabled {
+			t.Fatalf("Weblua menu/panel did not follow enabled=%v", enabled)
+		}
+	}
+}
+
+func TestGatewayWebluaAuthorization(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		config := Config{Secret: "test-secret", Weblua: enabled, Users: []*User{{Username: "user1"}}}
+		router := setupRouter(config)
+		token, err := GenerateJWT("user1", config.Secret)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, test := range []struct {
+			uri     string
+			allowed bool
+		}{
+			{"/playground", true}, {"/playground/", true}, {"/playground?example=1", true},
+			{"/embed", true}, {"/assets/index-test.js", true}, {"/assets/runtime.wasm", true},
+			{"/favicon.svg", true}, {"/favicon.png", true}, {"/apple-touch-icon.png", true},
+			{"/site.webmanifest", true}, {"/icon-192.png", true}, {"/icon-512.png", true},
+			{"/playground-evil", false}, {"/assets/../client2/", false},
+			{"/assets/%2e%2e/client2/", false}, {"/client2/", false},
+			{"https://other.example/playground", false},
+		} {
+			for _, authenticated := range []bool{false, true} {
+				request := httptest.NewRequest(http.MethodGet, "/internal/auth", nil)
+				request.Header.Set("X-Original-URI", test.uri)
+				if authenticated {
+					request.AddCookie(&http.Cookie{Name: "jwt", Value: token})
+				}
+				want := http.StatusUnauthorized
+				if authenticated {
+					want = http.StatusForbidden
+					if enabled && test.allowed {
+						want = http.StatusNoContent
+					}
+				}
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, request)
+				if recorder.Code != want {
+					t.Fatalf("Weblua enabled=%v authenticated=%v %s: status %d, want %d", enabled, authenticated, test.uri, recorder.Code, want)
+				}
+			}
 		}
 	}
 }

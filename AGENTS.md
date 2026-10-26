@@ -8,13 +8,16 @@ are `../no_trainer_client` (desktop/scanner image) and `../no_trainer_services`
 Inspect all relevant repositories before making a change and preserve existing
 local edits. Do not commit, publish, deploy, or message anyone unless authorized.
 
-- `main.go` loads Viper/.env configuration, defines `/`, `/login`, and `/assets`,
+- `main.go` loads Viper/.env configuration, defines `/`, `/login`, and `/portal-assets`,
   and embeds `templates/*` plus `dist/*`.
 - `config.go` parses list/keyed-object users and list/name-to-URL targets;
   `config_test.go` verifies both formats, overrides and invalid configuration; `jwt.go` implements eight-hour HS256
   sessions; `jwt_test.go` checks signatures, expiration, algorithms and user claims.
 - `templates/*.html` and `templates/partials/` are Go HTML templates.
-- `assets/main.ts` imports Flowbite; `assets/main.css` configures Tailwind 4,
+- `assets/main.ts` imports Flowbite; Weblua is an optional authenticated iframe at
+  `/playground`, with assets proxied by the course gateway. The XML viewer stays
+  in `standalone/`, generated from its existing TypeScript and template sources.
+- `assets/main.css` configures Tailwind 4,
   source scanning, dark mode and the primary color palette.
 - `build.mjs` uses esbuild and `@tailwindcss/postcss`; Chokidar 6 watches directories.
 - `dist/`, `build/`, `node_modules/`, and `no_trainer` are generated/ignored.

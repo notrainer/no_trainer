@@ -1,6 +1,6 @@
 secret: super_secret_key
 port: 8080
-nmap_visualizer: false
+weblua: false
 users:
   - username: user
     password: user
